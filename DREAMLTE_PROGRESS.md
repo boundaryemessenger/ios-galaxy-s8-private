@@ -1131,3 +1131,27 @@ built in CI or booted yet.
   touch-enabled iOS UI with a verified GPU-accelerated CoreAnimation frame.
   Next evidence needed: fix or reliably route unsupported draws, then an
   explicitly authorized stage-3 boot with fresh logs and a real frame check.
+
+## Follow-up read-only recheck (2026-11-25)
+
+- Recovery still reports USERDATA SWEETLOG total 299,431 bytes, flush #81.
+  The decoded text hash is unchanged
+  (`4e1c6298c15fa5c30ae262a15b852585cb1c250f61cc4bfbd904667eb2b6cf8b`);
+  pmsg is 951 bytes and garbled. These logs are stale and do not locate the
+  latest boot's stop point.
+- Read-only ADB confirms TWRP and verifies the installed BOOT prefix remains
+  the touch-disabled image
+  (`b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`).
+  The existing touch-enabled candidate
+  (`s8-stage3-candidate-gpu-enabled.img`, 19,118,096 bytes, SHA-256
+  `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`)
+  has not been installed or booted in this follow-up.
+- Direct source inspection confirms the foreign/private shader gap: pipeline
+  creation returns an object without a GPU pipeline, the encoder binds null,
+  and draw calls are skipped; the fallback only handles clears. No safe
+  translation or rendering fallback was established, so no source change
+  was made.
+- Confidence remains 25% for touch-enabled iOS plus a verified
+  GPU-rendered CoreAnimation frame. No reboot, flash, or partition write was
+  performed. A fresh explicit approval is required before testing the
+  touch-enabled candidate.
