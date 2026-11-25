@@ -201,6 +201,7 @@ struct s8_shader {
 	char name[64];
 	unsigned stage;                 /* 0 vertex, 4 fragment */
 	unsigned work_regs, attribute_count, ubo_count, texture_count, sampler_count;
+	uint64_t images_used;
 	unsigned nvar;
 	struct { uint32_t location, format; } var[64];   /* one per slot up to the highest */
 	unsigned ninline;
@@ -265,14 +266,14 @@ static uint32_t s8_next32(const uint8_t **p, const uint8_t *end, int *short_read
 	return rd32(*p - 4);
 }
 
-/* S8SH v2, see air2nir.cpp. */
+/* S8SH v3, see air2nir.cpp. */
 static int s8_parse_shader(struct s8_shader *s, const uint8_t *b, uint32_t size)
 {
 	const uint8_t *p = b, *end = b + size;
 	int short_read = 0;
 #define NEED(n) do { if ((size_t)(end - p) < (size_t)(n)) return -1; } while (0)
 #define U32() s8_next32(&p, end, &short_read)
-	if (U32() != 0x48533853 || U32() != 2)
+	if (U32() != 0x48533853 || U32() != 3)
 		return -1;
 	s->stage = U32();
 	s->code_size = U32();
@@ -281,6 +282,7 @@ static int s8_parse_shader(struct s8_shader *s, const uint8_t *b, uint32_t size)
 	s->ubo_count = U32();
 	s->texture_count = U32();
 	s->sampler_count = U32();
+	s->images_used = U32() | (uint64_t)U32() << 32;
 	s->nvar = U32();
 	if (s->nvar > 64)
 		return -1;
@@ -1223,6 +1225,67 @@ static uint64_t s8_texture_table(struct s8d_cmdbuf *cb, struct s8_stage_state *s
 	return d.gpu;
 }
 
+static int s8_image_tables(struct s8d_cmdbuf *cb, struct s8_stage_state *s,
+    const struct s8_shader *sh, uint64_t *attrs, uint64_t *bufs)
+{
+	*attrs = *bufs = 0;
+	if (sh->images_used == 0)
+		return 0;
+	if (sh->images_used & ~((UINT64_C(1) << S8D_MAX_TEXTURES) - 1))
+		return -1;
+
+	struct s8_ptr a = s8_alloc_descs(&cb->arena, S8D_MAX_TEXTURES, ATTRIBUTE);
+	struct s8_ptr b = s8_alloc_descs(&cb->arena, S8D_MAX_TEXTURES * 2 + 1, ATTRIBUTE_BUFFER);
+	if (!a.cpu || !b.cpu)
+		return -1;
+	memset(a.cpu, 0, S8D_MAX_TEXTURES * pan_size(ATTRIBUTE));
+	memset(b.cpu, 0, (S8D_MAX_TEXTURES * 2 + 1) * pan_size(ATTRIBUTE_BUFFER));
+
+	struct mali_attribute_packed *ad = a.cpu;
+	struct mali_attribute_buffer_packed *bd = b.cpu;
+	for (unsigned i = 0; i < S8D_MAX_TEXTURES; i++) {
+		if (!(sh->images_used & (UINT64_C(1) << i)))
+			continue;
+		const struct s8d_texture *t = &s->textures[i];
+		enum pipe_format pf = s8_pixel_format(t->format);
+		if (!s->texture_set[i] || !t->gpu || !t->width || !t->height ||
+		    t->width > 65536 || t->height > 65536 || !t->row_bytes ||
+		    pf == PIPE_FORMAT_NONE)
+			return -1;
+
+		unsigned block_size = util_format_get_blocksize(pf);
+		uint64_t min_row = (uint64_t)t->width * block_size;
+		uint64_t size = (uint64_t)t->row_bytes * t->height;
+		if (!block_size || block_size >= (1u << 10) || t->row_bytes < min_row ||
+		    size > UINT32_MAX || t->gpu > UINT64_MAX - size)
+			return -1;
+
+		unsigned hw_format = GENX(pan_format_from_pipe_format)(pf)->hw;
+		if (hw_format >= (1u << 22))
+			return -1;
+		pan_pack(&bd[i * 2], ATTRIBUTE_BUFFER, cfg) {
+			cfg.type = MALI_ATTRIBUTE_TYPE_3D_LINEAR;
+			cfg.pointer = t->gpu;
+			cfg.stride = block_size | (hw_format << 10);
+			cfg.size = size;
+		}
+		pan_cast_and_pack(&bd[i * 2 + 1], ATTRIBUTE_BUFFER_CONTINUATION_3D, cfg) {
+			cfg.s_dimension = t->width;
+			cfg.t_dimension = t->height;
+			cfg.r_dimension = 1;
+			cfg.row_stride = t->row_bytes;
+		}
+		pan_pack(&ad[i], ATTRIBUTE, cfg) {
+			cfg.buffer_index = i * 2;
+			cfg.format = hw_format << 10;
+		}
+	}
+
+	*attrs = a.gpu;
+	*bufs = b.gpu;
+	return 0;
+}
+
 static uint64_t s8_sampler_table(struct s8d_cmdbuf *cb, struct s8_stage_state *s, const struct s8_shader *sh)
 {
 	if (s->samplers_desc && s->for_pipeline == cb->pipeline)
@@ -1540,7 +1603,13 @@ void s8d_draw(struct s8d_cmdbuf *cb, unsigned prim, unsigned start, unsigned cou
 	uint64_t vs_smp = s8_sampler_table(cb, vst, pl->vs), fs_smp = s8_sampler_table(cb, fst, pl->fs);
 	vst->for_pipeline = fst->for_pipeline = pl;
 	uint64_t attribs = 0, attrib_bufs = 0;
-	if (s8_attributes(cb, pl, padded, instances, &attribs, &attrib_bufs) != 0 || !vs_ubos || !fs_ubos || !viewport) {
+	uint64_t fs_image_attrs = 0, fs_image_bufs = 0;
+	if (pl->vs->images_used != 0 ||
+	    s8_attributes(cb, pl, padded, instances, &attribs, &attrib_bufs) != 0 ||
+	    s8_image_tables(cb, fst, pl->fs, &fs_image_attrs, &fs_image_bufs) != 0 ||
+	    !vs_ubos || !fs_ubos || !viewport) {
+		if (pl->vs->images_used != 0 || pl->fs->images_used != 0)
+			s8_log("MTL draw: missing or unsupported storage-image binding");
 		p->skipped++;
 		return;
 	}
@@ -1662,6 +1731,8 @@ void s8d_draw(struct s8d_cmdbuf *cb, unsigned prim, unsigned start, unsigned cou
 		cfg.varyings = pl->link.fs_attribs;
 		cfg.varying_buffers = pl->link.fs_attribs ? vb.gpu : 0;
 		cfg.thread_storage = p->tls.gpu;
+		cfg.attributes = fs_image_attrs;
+		cfg.attribute_buffers = fs_image_bufs;
 		cfg.offset_start = min_index;
 		cfg.instance_size = instances > 1 ? padded : 1;
 		cfg.instance_primitive_size = pan_padded_vertex_count(DIV_ROUND_UP(padded, pv));

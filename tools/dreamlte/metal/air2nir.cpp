@@ -1111,7 +1111,19 @@ void Translator::emit_air(CallInst &ci, StringRef name)
 		vals[&ci] = { &tex->def, nir_imm_intN_t(&b, 0, 8) };
 		return;
 	} else if (bs == "write_texture_2d") {
-		unsupported.push_back("image write (" + name.str() + ")");
+		nir_def *image = nir_u2u32(&b, arg(0));
+		nir_def *coord = nir_i2i32(&b, arg(1));
+		coord = nir_vec4(&b, nir_channel(&b, coord, 0), nir_channel(&b, coord, 1),
+		    nir_imm_int(&b, 0), nir_imm_int(&b, 0));
+		nir_def *data = arg(2);
+		if (data->bit_size != 32)
+			data = nir_f2f32(&b, data);
+		struct _nir_image_store_indices indices = {
+			0, GLSL_SAMPLER_DIM_2D, false, PIPE_FORMAT_NONE, ACCESS_NON_READABLE, 0,
+			nir_type_float32
+		};
+		_nir_build_image_store(&b, image, coord, nir_i2i32(&b, arg(3)), data,
+		    nir_imm_int(&b, 0), indices);
 		return;
 	} else if (bs.starts_with("get_null_texture")) {
 		vals[&ci] = { nir_imm_int64(&b, S8_NULL_TEXTURE) };
@@ -1672,10 +1684,30 @@ static nir_shader *test_shader(bool vertex)
 	return b.shader;
 }
 
+static nir_shader *test_image_shader()
+{
+	nir_builder b = nir_builder_init_simple_shader(MESA_SHADER_FRAGMENT,
+	    pan_shader_get_compiler_options(6), "s8-test-image-fs");
+	nir_def *coord = nir_vec4(&b, nir_imm_int(&b, 0), nir_imm_int(&b, 0),
+	    nir_imm_int(&b, 0), nir_imm_int(&b, 0));
+	nir_def *color = nir_vec4(&b, nir_imm_float(&b, 1), nir_imm_float(&b, 0),
+	    nir_imm_float(&b, 0), nir_imm_float(&b, 1));
+	struct _nir_image_store_indices indices = {
+		0, GLSL_SAMPLER_DIM_2D, false, PIPE_FORMAT_NONE, ACCESS_NON_READABLE, 0,
+		nir_type_float32
+	};
+	_nir_build_image_store(&b, nir_imm_int(&b, 3), coord, nir_imm_int(&b, 0),
+	    color, nir_imm_int(&b, 0), indices);
+	nir_store_var(&b, test_var(b.shader, nir_var_shader_out, "color", glsl_vec4_type(),
+	    FRAG_RESULT_DATA0), color, 0xf);
+	return b.shader;
+}
+
 /* air2nir output (little endian):
- *   "S8SH" u32 version=2
+ *   "S8SH" u32 version=3
  *   u32 stage (0 vertex, 4 fragment), u32 binary size, u32 work_reg_count,
  *   u32 attribute_count, u32 ubo_count, u32 texture_count, u32 sampler_count,
+ *   u64 image usage mask,
  *   u32 varying_count, then varying_count x { u32 location, u32 pipe_format },
  *   u32 inline_sampler_count, inline_sampler_count x u64 Metal sampler state,
  *   u32 fs_flags (bit0 can_discard, bit1 reads_frag_coord, bit2 writes_depth,
@@ -1738,6 +1770,9 @@ int main(int argc, char **argv)
 	} else if (fname == "@test_vs" || fname == "@test_fs") {
 		stage = fname == "@test_vs" ? MESA_SHADER_VERTEX : MESA_SHADER_FRAGMENT;
 		s = test_shader(stage == MESA_SHADER_VERTEX);
+	} else if (fname == "@test_img") {
+		stage = MESA_SHADER_FRAGMENT;
+		s = test_image_shader();
 	} else {
 		MetallibFunction *fn = nullptr;
 		funcs = read_metallib(lib);
@@ -1773,7 +1808,26 @@ int main(int argc, char **argv)
 	s->info.next_stage = stage == MESA_SHADER_VERTEX ? MESA_SHADER_FRAGMENT : MESA_SHADER_NONE;
 	NIR_PASS(_, s, nir_lower_vars_to_ssa);
 	NIR_PASS(_, s, nir_opt_dce);
+	NIR_PASS(_, s, nir_opt_constant_folding);
 	nir_shader_gather_info(s, nir_shader_get_entrypoint(s));
+	nir_foreach_function_impl(impl, s) {
+		nir_foreach_block(block, impl) {
+			nir_foreach_instr(instr, block) {
+				if (instr->type != nir_instr_type_intrinsic)
+					continue;
+				nir_intrinsic_instr *in = nir_instr_as_intrinsic(instr);
+				if (in->intrinsic != nir_intrinsic_image_store)
+					continue;
+				if (!nir_src_is_const(in->src[0]))
+					fail("dynamic image-store index");
+				unsigned index = nir_src_as_uint(in->src[0]);
+				if (index >= 64)
+					fail("image-store index exceeds the 64-slot ABI");
+				BITSET_SET(s->info.images_used, index);
+				s->info.num_images = MAX2(s->info.num_images, index + 1);
+			}
+		}
+	}
 	pan_shader_preprocess(s, gpu_id);
 	/* CoreAnimation's varyings are all perspective-correct. */
 	if (stage == MESA_SHADER_VERTEX)
@@ -1828,7 +1882,7 @@ int main(int argc, char **argv)
 	std::vector<uint32_t> w;
 	auto put = [&](uint32_t v) { w.push_back(v); };
 	put(0x48533853); /* "S8SH" */
-	put(2);
+	put(3);
 	put(stage);
 	put(binary.size);
 	put(info.work_reg_count);
@@ -1836,6 +1890,8 @@ int main(int argc, char **argv)
 	put(info.ubo_count);
 	put(info.texture_count);
 	put(info.sampler_count);
+	put(s->info.images_used[0]);
+	put(s->info.images_used[1]);
 	unsigned nv = stage == MESA_SHADER_VERTEX ? info.varyings.output_count : info.varyings.input_count;
 	put(nv);
 	for (unsigned i = 0; i < nv; i++) {

@@ -14,14 +14,14 @@ if ((${#archives[@]} == 0)); then
 fi
 printf 'Building %d Mesa static archives\n' "${#archives[@]}"
 ninja -C "$bld" "${archives[@]}" >/dev/null
-# the test cache: the three built-in shaders
-for f in @preload @test_vs @test_fs; do
+# the test cache: built-in shaders including a storage-image writer
+for f in @preload @test_vs @test_fs @test_img; do
 	"$air2nir" none "$f" "$out/$f.s8sh" -D 2>/dev/null
 done
 python3 - "$out" <<'PY'
 import struct, sys, os
 out = sys.argv[1]
-names = ['@preload', '@test_vs', '@test_fs']
+names = ['@preload', '@test_vs', '@test_fs', '@test_img']
 blobs = [open(os.path.join(out, n + '.s8sh'), 'rb').read() for n in names]
 head = 12 + 72 * len(names)
 index, data, off = b'', b'', head

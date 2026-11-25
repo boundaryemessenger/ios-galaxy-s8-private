@@ -737,3 +737,25 @@ built in CI or booted yet.
   S8MALI_MAP_SURFACE), boot-50 command line, overlay = bundle with the draw
   path + `quartzcore.s8sc`. Boot twice: the overlay installs on the first
   boot, the plugin is used from the second.
+
+## QuartzCore image writes (2026-11-25)
+
+- Added AIR `write_texture_2d` lowering for the observed 2D i16-coordinate,
+  v4f16/v4f32 fragment shaders. Signed coordinates are extended to 32 bits;
+  half-float values are converted for the Mali image-store lowering. Dynamic
+  image indices and vertex-stage image stores remain unsupported.
+- S8SH v3 carries a 64-bit image-use mask. The fragment draw path builds the
+  Mali-G71 image ATTRIBUTE and paired ATTRIBUTE_BUFFER tables from bound
+  texture metadata, checks format/dimensions/strides, and skips draws with
+  missing or unsupported storage-image bindings.
+- Added `@test_img` to the host harness, writing texture slot 3 like the two
+  missing QuartzCore shaders. Mesa Pandecode validated both load-action
+  passes: 3 draws each, 0 skipped, 4 submits, 0 failures.
+- Full QuartzCore compilation now succeeds: 135/135 functions, 36 varying
+  names in 5 slots. The 1,047,796-byte diagnostic cache is outside Git at
+  `F:\ios-sweet-temp\quartzcore-final.s8sc` (SHA-256
+  `A06B1678C0455380E1D56642D23B6BA1DFDC4B76B08C6A75B17D685A161206A4`).
+- This is host-side shader and descriptor validation only. No stage-3 image
+  or kernel was built, and no Mali MMIO, phone partition, or real
+  CoreAnimation draw was accessed. The iPhoneOS SDK remains on the Mac; the
+  XNU/ACPM firmware and G3D power-sequencing prerequisites remain unresolved.

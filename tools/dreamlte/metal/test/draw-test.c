@@ -5,7 +5,8 @@
  * (GPU address = S8T_BASE + offset), and S8MALI_SUBMIT runs Mesa's
  * pandecode over the job chain instead of a GPU, which prints every
  * descriptor and reports malformed ones. The shaders are air2nir's
- * "@test_vs"/"@test_fs"/"@preload" in a cache built by build-draw-test.sh.
+ * "@test_vs"/"@test_fs"/"@test_img"/"@preload" in a cache built by
+ * build-draw-test.sh.
  *
  *   draw-test CACHE.s8sc
  */
@@ -36,7 +37,8 @@ void s8_log(const char *fmt, ...)
 	vprintf(fmt, ap);
 	printf("\n");
 	va_end(ap);
-	if (strstr(fmt, "failed") || strstr(fmt, "bad") || strstr(fmt, "no GPU pipeline"))
+	if (strstr(fmt, "failed") || strstr(fmt, "bad") || strstr(fmt, "no GPU pipeline") ||
+	    strstr(fmt, "storage-image binding"))
 		failures++;
 }
 
@@ -119,6 +121,10 @@ int main(int argc, char **argv)
 	struct s8d_pipeline *p = s8d_pipeline_new(&d, 1);
 	if (p == NULL)
 		return 1;
+	d.fs_name = "@test_img";
+	struct s8d_pipeline *p_image = s8d_pipeline_new(&d, 2);
+	if (p_image == NULL)
+		return 1;
 
 	s8_mem target, texmem, vbuf;
 	s8_mem_alloc(&target, 256 * 128 * 4, 64);
@@ -145,6 +151,9 @@ int main(int argc, char **argv)
 		s8d_draw(cb, 4, 0, 4, 1, 0, 0, NULL);            /* triangle strip */
 		uint16_t idx[6] = { 0, 1, 2, 2, 1, 3 };
 		s8d_draw(cb, 3, 0, 6, 1, 2, 0, idx);             /* indexed triangles */
+		s8d_set_pipeline(cb, p_image);
+		s8d_set_texture(cb, S8D_STAGE_FRAGMENT, 3, &tex);
+		s8d_draw(cb, 4, 0, 4, 1, 0, 0, NULL);            /* storage image */
 		s8d_pass_end(cb);
 		if (s8d_pass_execute(cb, pass) != 0)
 			failures++;
