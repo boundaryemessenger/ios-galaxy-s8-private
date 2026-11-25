@@ -880,6 +880,11 @@ built in CI or booted yet.
   with the loader console but does not prove which stage ran; user does not
   recall the final line. User later clarified it remained for about five
   minutes. Do not infer XNU entry from "console" alone.
+- User also reported `Failed to write boot-picker-bringup-reason to NVRAM`.
+  An earlier user-transcribed S8 XNU console had this as a separate expected
+  diagnostic when no NVRAM driver exists. This line alone is not a panic,
+  boot failure, or GPU status; adjacent output is unknown and the persistent
+  XNU ring did not change.
 - The overlay's persistent root writes were authorized and are configured for
   `/usr/appleinternal/sbin/launchd.s8` and
   `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, shader
