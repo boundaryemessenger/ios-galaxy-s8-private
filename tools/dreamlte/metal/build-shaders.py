@@ -38,7 +38,7 @@ def varyings_of(bitcode, tmp, name):
 
 
 def colour(sets):
-    names = sorted({n for s in sets for n in s}, key=lambda n: -sum(n in s for s in sets))
+    names = sorted({n for s in sets for n in s}, key=lambda n: (-sum(n in s for s in sets), n))
     slot = {}
     for n in names:
         used = {slot[m] for s in sets if n in s for m in s if m in slot}

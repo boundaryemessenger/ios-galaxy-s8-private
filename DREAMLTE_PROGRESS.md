@@ -1178,3 +1178,34 @@ built in CI or booted yet.
   acceptance criteria. Confidence remains 25% for touch-enabled iOS plus a
   verified GPU-rendered CoreAnimation frame. Do not reboot or write again
   without fresh explicit authorization.
+
+## Offline prerequisites before any next attempt (2026-11-25 22:26 UTC)
+
+- Fixed unstable tie handling in `tools/dreamlte/metal/build-shaders.py`.
+  The varying-name set was sorted only by frequency; tied names inherited
+  Python set iteration order, which changed slot assignments across process
+  hash seeds. Two pre-fix full cache builds contained the same 135 entries
+  and sizes but differed in 36 machine-code blobs. The key now includes the
+  name as a deterministic secondary sort value. Added
+  `tools/dreamlte/metal/test/test_build_shaders.py` to check hash-seed
+  independence.
+- The new regression test and Python compilation pass. Two full
+  `build-shaders.py` runs with `PYTHONHASHSEED=1` and `2` both compiled
+  135/135 QuartzCore functions, 36 varying names in 5 slots, and produced
+  byte-identical 1,047,844-byte caches (SHA-256
+  `7d858b889193c1ce2e05be1fe2c130af1ffc9c4b0c2e8fd36373c43c73e98977`).
+- Rebuilt and ran `test/build-draw-test.sh` with current source. It built
+  74 Mesa static archives; each load-action pass reported 3 GPU draws and
+  0 skipped; the run ended `4 submits, 0 failures` with no invalid
+  Pandecode descriptors. This is host-side synthetic validation only.
+- Hardened patch 0129's recovery diagnostic: `s8autotwrp` now runs on its
+  own timer thread, separate from CPU profiling/task/VM statistics; its
+  delay is bounded and timer/PMU mapping failures are logged. Patch parsing
+  and structural assertions pass. The local machine lacks Xcode/Clang, so
+  the XNU patch has not been compiled. This makes diagnosis more reliable
+  but is not evidence that the S8 boots.
+- Foreign/private Metal functions still lack Mali pipelines and their draws
+  are skipped. No real S8 CoreAnimation GPU frame was observed. Confidence
+  remains 25% for the complete target, below the user's 50% minimum before
+  another attempt. No device action was taken; do not retry before reaching
+  50% and receiving fresh authorization.

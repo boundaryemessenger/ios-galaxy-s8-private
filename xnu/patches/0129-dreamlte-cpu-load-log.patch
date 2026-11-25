@@ -45,7 +45,7 @@ new file mode 100644
 index 0000000..c0939cb
 --- /dev/null
 +++ b/osfmk/kern/s8_load.c
-@@ -0,0 +1,200 @@
+@@ -0,0 +1,218 @@
 +/*
 + * Galaxy S8 (dreamlte) diagnostics: every 10 s, how each CPU spent the
 + * interval (user / system / idle, from processor_info CPU_LOAD_INFO ticks).
@@ -180,21 +180,26 @@ index 0000000..c0939cb
 +		*(volatile uint32_t *)(pmu + 0x80c) = 0x12345674;
 +		__asm__ volatile ("dsb sy" ::: "memory");
 +		*(volatile uint32_t *)(pmu + 0x400) = 1;
++	} else {
++		printf("S8: recovery timer could not map PMU\n");
 +	}
++}
++
++/* Keep recovery independent of task and VM diagnostics in the profiler. */
++static void
++s8_recovery_thread(__unused void *arg, __unused wait_result_t wr)
++{
++	IOSleep(s8_autotwrp * 1000);
++	s8_reboot_to_recovery();
 +}
 +
 +static void
 +s8_load_thread(__unused void *arg, __unused wait_result_t wr)
 +{
 +	natural_t last[S8_LOAD_CPUS][CPU_STATE_MAX] = {};
-+	uint32_t elapsed = 0;
 +
 +	for (;;) {
 +		IOSleep(10000);
-+		elapsed += 10;
-+		if (s8_autotwrp && elapsed >= s8_autotwrp) {
-+			s8_reboot_to_recovery();
-+		}
 +		char line[200];
 +		int n = snprintf(line, sizeof(line), "S8LOAD:");
 +		int cpu = 0;
@@ -234,8 +239,21 @@ index 0000000..c0939cb
 +
 +	PE_parse_boot_argn("s8load", &on, sizeof(on));
 +	PE_parse_boot_argn("s8autotwrp", &s8_autotwrp, sizeof(s8_autotwrp));
++	if (s8_autotwrp > 3600) {
++		s8_autotwrp = 3600;
++	}
++	if (s8_autotwrp != 0) {
++		if (kernel_thread_start(s8_recovery_thread, NULL, &thread) == KERN_SUCCESS) {
++			thread_deallocate(thread);
++			printf("S8: recovery timer started (%u s)\n", s8_autotwrp);
++		} else {
++			printf("S8: recovery timer thread failed to start\n");
++		}
++	}
 +	if (on && kernel_thread_start(s8_load_thread, NULL, &thread) == KERN_SUCCESS) {
 +		thread_deallocate(thread);
++	} else if (on) {
++		printf("S8: load logger thread failed to start\n");
 +	}
 +}
 +
