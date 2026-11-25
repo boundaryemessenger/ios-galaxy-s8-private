@@ -863,10 +863,23 @@ built in CI or booted yet.
   it provides no reliable loader/kernel diagnosis. User's display during the
   attempt and whether candidate XNU ran remain unknown. Do not reboot or write
   again before reconciling observations.
+- Follow-up TWRP check at 20:16 UTC: the newly read 4,198,400-byte USERDATA
+  ring area has the exact same SHA-256 as the 20:01 capture
+  (`26cd3324cbce7fd243e8f3f8ca0f28ff25e4bb35edcde835b6a45940d56802de`);
+  both decode to total 299,431 bytes, flush #81, and identical XNU log
+  SHA-256 `4e1c6298c15fa5c30ae262a15b852585cb1c250f61cc4bfbd904667eb2b6cf8b`.
+  The persistent XNU log did not change during the reported console attempt
+  and cannot confirm the candidate boot. Latest 951-byte pmsg is garbled and
+  has no reliable handoff marker.
+- Candidate-args issue: it has `sweetfb_gpu=1` and `s8metal=1`, but omits
+  `s8gpu=1`. Exact loader source only requests the G3D rail and runs the GPU
+  probe when `s8gpu=1` is present. Do not repeat this image for an acceleration
+  test; correct and inspect the image/loader path first.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
-  recall the final line. Do not infer XNU entry from "console" alone.
+  recall the final line. User later clarified it remained for about five
+  minutes. Do not infer XNU entry from "console" alone.
 - The overlay's persistent root writes were authorized and are configured for
   `/usr/appleinternal/sbin/launchd.s8` and
   `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, shader
