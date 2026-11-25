@@ -5,8 +5,14 @@
 set -euo pipefail
 src=$(realpath "$1"); bld=$(realpath "$2"); out=$(realpath -m "$3")
 here=$(dirname "$(realpath "$0")")
-ninja -C "$bld" src/panfrost/lib/libpanfrost_lib.a src/panfrost/lib/libpan-arch-v6.a \
-	src/panfrost/compiler/libpanfrost_bifrost.a src/compiler/nir/libnir.a src/util/libmesa_util.a >/dev/null
+# Build optional static archives too; Meson does not include them in its default targets.
+mapfile -t archives < <(ninja -C "$bld" -t targets all | awk -F: '$1 ~ /^src\/.*\.a$/ {print $1}')
+if ((${#archives[@]} == 0)); then
+	echo "No Mesa static archive targets found" >&2
+	exit 1
+fi
+printf 'Building %d Mesa static archives for air2nir\n' "${#archives[@]}"
+ninja -C "$bld" "${archives[@]}" >/dev/null
 # Mesa's own flags for its v6 objects (defines, HAVE_* probes, includes).
 flags=$(python3 - "$bld" <<'PY'
 import json, shlex, sys, os
