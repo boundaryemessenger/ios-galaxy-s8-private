@@ -995,3 +995,10 @@ built in CI or booted yet.
   against this recovery session. A boot-specific capture is still required
   to diagnose the latest attempt; do not boot again without fresh explicit
   authorization.
+- At 21:26 UTC, after the user's explicit authorization, issued exactly one
+  `adb reboot` from recovery to test the installed BOOT candidate. ADB did not
+  reconnect within 180 seconds; `fastboot devices` also listed no device.
+  No further reboot or manual partition write was issued. It is unknown
+  whether the kernel reached root, whether the configured USERDATA overlay
+  and SWEETLOG writes ran, or what the handset currently displays. Await the
+  user's screen state before any further device action.
