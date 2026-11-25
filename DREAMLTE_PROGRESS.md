@@ -929,10 +929,11 @@ built in CI or booted yet.
   matched `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.
   TWRP remained connected. No reboot was issued, and USERDATA was not touched
   during this repair. Its first 52 bytes remain altered.
-- Next: make no reboot or USERDATA write until the user explicitly authorizes
-  it. BOOT is repaired and verified; USERDATA's HFSX signature at offset 1024
-  is intact, but the original bytes are not located and no filesystem check
-  was run. GPU init and CoreAnimation drawing remain unverified.
+- User explicitly chose to leave the phone in TWRP and not reboot. Respect
+  that; no reboot or USERDATA write is authorized. BOOT is repaired and
+  verified; USERDATA's HFSX signature at offset 1024 is intact, but the
+  original bytes are not located and no filesystem check was run. GPU init
+  and CoreAnimation drawing remain unverified.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
