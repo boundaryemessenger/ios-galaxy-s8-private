@@ -768,3 +768,37 @@ built in CI or booted yet.
   or kernel was built, and no Mali MMIO, phone partition, or real
   CoreAnimation draw was accessed. The iPhoneOS SDK remains on the Mac; the
   XNU/ACPM firmware and G3D power-sequencing prerequisites remain unresolved.
+
+## Stage-3 iOS bundle and overlay build (2026-11-25)
+
+- With the user's permission, used a temporary SSH key to reach the Mac.
+  Verified its ED25519 host fingerprint against the fingerprint supplied by
+  the user. Xcode 27.2 reports iPhoneOS SDK 27.2. Transferred the SDK archive
+  over the local network; Mac and PC SHA-256 both:
+  `16F359DED2E625F6AC86680C7E2761C186C5B8EAA03198380787776328470902`.
+  Extracted SDK in the external WSL build workspace (225 MiB). No phone data
+  or partitions were accessed.
+- Cross-compiled Mesa Panfrost v6 for arm64 iOS using the copied SDK:
+  `libs8mesa.a` is 1.1 MiB with 42 objects. Clang compiled all selected
+  sources; three optional format-helper sources were absent and skipped by
+  the existing script. The final link below succeeded with no undefined
+  symbols.
+- LLVM 18 `ld64.lld` cannot parse Xcode 27.2's `libSystem.tbd` target
+  `arm64e.x1-ios`; its failed link was not used. Instead, transferred only
+  the six plugin objects and Mesa archive to the Mac and linked with
+  `xcrun --sdk iphoneos ld`. Retrieved `S8MaliMetal`, 865,000 bytes, verified
+  as Mach-O 64-bit arm64 bundle with no undefined symbols. The bundle includes
+  the draw implementation (`s8d_init`, `s8d_draw`, and
+  `s8d_pass_execute`).
+- Built `s8gputest`, 66,664-byte arm64 iOS executable, with Apple's linker.
+  Assembled `F:\ios-sweet-temp\stage3-overlay-27.2\stage3.ovl`: 1,980,912
+  bytes, SHA-256
+  `4A408C10D696E8159EDAF451D5AAB50D933DAD42CEB74FB9E0CBFB22C585620C`.
+  Parsed the overlay and checked its seven entries, executable, bundle plist,
+  plugin, and 1,047,796-byte complete QuartzCore cache. This is an overlay
+  artifact, not a BOOT image or hardware validation.
+- BOOT image assembly is blocked: the local S8 repository preserves three
+  40 MiB stock BOOT backups, but no current compatible DREAMLTE XNU kernel
+  artifact is present. Do not substitute the older A5XELTE artifact. No
+  phone boot, GPU MMIO, or partition write was attempted. ACPM firmware
+  rights/loading and safe G3D power/clock sequencing remain unverified.
