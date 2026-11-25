@@ -863,6 +863,10 @@ built in CI or booted yet.
   it provides no reliable loader/kernel diagnosis. User's display during the
   attempt and whether candidate XNU ran remain unknown. Do not reboot or write
   again before reconciling observations.
+- User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
+  during the candidate attempt before returning to TWRP. This is consistent
+  with the loader console but does not prove which stage ran. Ask if the final
+  visible line was `JUMP TO XNU` or `FAIL:` before drawing a conclusion.
 - The overlay's persistent root writes were authorized and are configured for
   `/usr/appleinternal/sbin/launchd.s8` and
   `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, shader
