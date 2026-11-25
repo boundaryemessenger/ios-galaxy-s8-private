@@ -995,10 +995,17 @@ built in CI or booted yet.
   against this recovery session. A boot-specific capture is still required
   to diagnose the latest attempt; do not boot again without fresh explicit
   authorization.
-- At 21:26 UTC, after the user's explicit authorization, issued exactly one
-  `adb reboot` from recovery to test the installed BOOT candidate. ADB did not
-  reconnect within 180 seconds; `fastboot devices` also listed no device.
-  No further reboot or manual partition write was issued. It is unknown
-  whether the kernel reached root, whether the configured USERDATA overlay
-  and SWEETLOG writes ran, or what the handset currently displays. Await the
-  user's screen state before any further device action.
+- After the user's explicit authorization, issued exactly one `adb reboot`
+  from recovery to test the installed BOOT candidate. ADB did not reconnect
+  within 180 seconds; by 21:26 UTC, `fastboot devices` also listed no device.
+  No further reboot or manual partition write was issued. Whether the kernel
+  reached root or the configured USERDATA overlay/SWEETLOG writes ran is
+  unknown.
+- After that test boot, user reports the console's last line is
+  `S8 TOUCH: enabled after 0 retries` (transcribed as `S* TOUCH`). Source
+  `dreamlte_touch_start()` prints this after the S6SY761 accepts its enable
+  commands and immediately before it starts the touch worker. This confirms
+  touch-controller enable, not worker startup, root mount, GUI, or GPU. The
+  saved SWEETLOG remains stale and ADB/fastboot are unavailable. Time on the
+  line is unknown. Do not retry boot or modify partitions; get screen duration
+  and status before choosing any further diagnostics.
