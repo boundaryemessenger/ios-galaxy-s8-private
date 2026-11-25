@@ -1020,3 +1020,14 @@ built in CI or booted yet.
   for the TWRP boot and ends at `Starting kernel`; it is not the failed iOS
   kernel log. No recovery reboot or partition write was issued for capture.
   The reason this boot stops after touch enable remains unresolved.
+- A diagnostic BOOT candidate was built offline at
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-candidate-s8touch-off.img`
+  (19,118,096 bytes, SHA-256
+  `b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`).
+  It preserves the installed candidate's kernel, loader, DT, and overlay;
+  verified that exactly 10 bytes in the SWEETXNU cmdline field changed,
+  adding only `s8touch=0`. This isolates the touch initialization path. It
+  has not been written to BOOT or booted. Next step requires explicit
+  authorization to write this exact image to BOOT and run one diagnostic
+  test; its `rootrw=1` path may update only the configured overlay and
+  SWEETLOG files on USERDATA.
