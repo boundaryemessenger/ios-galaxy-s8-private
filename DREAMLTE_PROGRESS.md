@@ -1044,8 +1044,19 @@ built in CI or booted yet.
   scheduled and “Proceeding”; it is a progress marker, not a wait/failure
   message. The precise final line and later blocked stage remain unknown.
   No further reboot or partition write without fresh approval.
-- User authorized returning to TWRP for read-only logs. The handset is still
-  at the console with no ADB/fastboot connection, so the agent cannot initiate
-  that restart remotely. No restart or partition write has been issued since
-  the diagnostic boot. Await the user's hardware-button return to TWRP, then
-  capture logs read-only; do not flash or boot again.
+- User authorized returning to TWRP for read-only logs and reports the phone
+  is now in TWRP. Read-only ADB confirms `dreamlte`, BOOT `/dev/block/sda7`,
+  USERDATA `/dev/block/sda26`; installed BOOT prefix still hashes to the
+  diagnostic candidate `b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`.
+  SWEETLOG remains flush #81 with exactly the older text hash
+  `4e1c6298c15fa5c30ae262a15b852585cb1c250f61cc4bfbd904667eb2b6cf8b`, so
+  there is no fresh XNU evidence from the touch-disabled attempt. New
+  `pmsg-ramoops-0` is 951 bytes, SHA-256
+  `b61668c1e54fb765489bce500afae5f7d3777333dcb4b98f704333859e8f79d`,
+  but still garbled with no reliable kernel progress marker.
+  `/proc/last_kmsg` is 24,938 bytes of Samsung S-Boot output for recovery and
+  ends at `Starting kernel`; it is not the previous iOS kernel log. User
+  reports the diagnostic attempt stopped at an `ifnet_attach` kernel-thread
+  progress message and did not show `S8 TOUCH: disabled`. Thus this test does
+  not isolate touch as the failure cause. No reboot or partition write was
+  performed for log capture. Diagnosis remains open; do not claim readiness.
