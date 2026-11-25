@@ -892,10 +892,17 @@ built in CI or booted yet.
   length readback SHA-256 matched the candidate, then the script rebooted.
   No other partition was deliberately written.
 - ADB and fastboot did not reconnect within five minutes. This does not reveal
-  whether the loader, XNU, or `s8autotwrp=90` ran. No trustworthy screen,
-  serial, or refreshed persistent XNU log is available yet. Do not flash or
-  reboot again until the user reports the current screen and the handoff is
-  diagnosed; GPU init and CoreAnimation drawing remain unverified.
+  whether `s8autotwrp=90` ran.
+- User reports the last visible console line is `S8 TOUCH: worker started`.
+  This exact string is printed by `dreamlte_touch.c` in the XNU S8 touchscreen
+  worker, confirming loader handoff and XNU progress through touch-driver
+  startup. It does not demonstrate GPU probe/init, root mount, or a
+  CoreAnimation draw. Automatic recovery did not occur within five minutes;
+  whether the timer thread started is unknown.
+- Next: have the user return the phone to TWRP without wiping or flashing.
+  Pull pstore and persistent logs read-only, verify the BOOT prefix hash, and
+  diagnose why `s8autotwrp=90` did not return. Do not write BOOT again until
+  this is understood; GPU init and CoreAnimation drawing remain unverified.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
