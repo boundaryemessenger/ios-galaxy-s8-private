@@ -833,6 +833,9 @@ built in CI or booted yet.
   not the preserved baseline hash
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`.
   Do not overwrite without fresh exact approval.
+- Made a read-only 40 MiB live BOOT backup at
+  `F:\iOS Galaxy\backup\G950F-BOOT-live-pre-stage3-20261125.img`; its SHA-256
+  exactly matches the live partition (`086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`).
 - User approved a temporary boot and overlay writes, but no standard fastboot
   device is exposed. The S8 project assessment notes Download Mode and no
   established non-writing load path; `fastboot.exe` is present on the host,
