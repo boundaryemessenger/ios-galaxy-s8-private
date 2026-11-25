@@ -22,6 +22,15 @@ Observations on the phone and build results are kept apart from plans.
   clear operations are CPU-emulated). No real CoreAnimation frame has been
   observed on the S8 with this stage-3 path. Component results therefore do
   not meet the user's 75% end-to-end threshold.
+- User requests a percentage in each status. Current subjective estimate is
+  25% for the complete goal; it is a judgment, not a statistically measured
+  probability.
+- Read-only check at 22:08 UTC sees the S8 (`dreamlte`) in recovery/TWRP, BOOT
+  `/dev/block/sda7`; the first 19,118,096 bytes hash to
+  `b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`.
+  This is the touch-disabled diagnostic image. No reboot, flash, or partition
+  write was issued. Repeating its boot would not test the required working
+  touch path.
 - Continue offline diagnosis. No reboot or partition write without fresh
   authorization. When the threshold is met, report the evidence and caveats;
   hardware success still requires a separately authorized, directly verified
