@@ -873,8 +873,29 @@ built in CI or booted yet.
   has no reliable handoff marker.
 - Candidate-args issue: it has `sweetfb_gpu=1` and `s8metal=1`, but omits
   `s8gpu=1`. Exact loader source only requests the G3D rail and runs the GPU
-  probe when `s8gpu=1` is present. Do not repeat this image for an acceleration
-  test; correct and inspect the image/loader path first.
+  probe when `s8gpu=1` is present. Do not repeat this old image for an
+  acceleration test.
+- During this session, built a corrected candidate from the extracted, already
+  validated loader and SWEETXNU payload, adding only `s8gpu=1` to its
+  608-byte command-line field. It keeps `sweetfb_gpu=1`, `s8metal=1`, and
+  `s8autotwrp=90`. Loader and DT are byte-identical to the previous image;
+  the payload differs only in the command-line field. Candidate:
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-candidate-gpu-enabled.img`,
+  19,118,096 bytes, SHA-256
+  `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.
+- Before flashing, made a read-only full BOOT copy to
+  `F:\iOS Galaxy\backup\G950F-BOOT-before-corrected-stage3-20261125.img`;
+  40 MiB, SHA-256
+  `497e77d076aa4e2494af2dcd7bb0ad5a2022bf922d5a7d43ee316399bf5be883`.
+- After 20:18 UTC, confirmed TWRP `dreamlte`, SM-G950F, BOOT `/dev/block/sda7`
+  (40 MiB). Wrote only the 19,118,096-byte corrected image to BOOT; exact
+  length readback SHA-256 matched the candidate, then the script rebooted.
+  No other partition was deliberately written.
+- ADB and fastboot did not reconnect within five minutes. This does not reveal
+  whether the loader, XNU, or `s8autotwrp=90` ran. No trustworthy screen,
+  serial, or refreshed persistent XNU log is available yet. Do not flash or
+  reboot again until the user reports the current screen and the handoff is
+  diagnosed; GPU init and CoreAnimation drawing remain unverified.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
