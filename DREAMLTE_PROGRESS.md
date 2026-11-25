@@ -26,7 +26,8 @@ the bare-metal `s8-probe` (v2–v7) booted from BOOT:
 - TWRP ramoops: base `0x92000000`, 2 MiB, ecc 0, console zone `0x92080000`
   (512 KiB). Text written there in pstore format survives a forced reboot (with
   a few bit flips) and appears in `/sys/fs/pstore/console-ramoops-0`.
-- Storage is UFS (BOOT `sda7`, USERDATA `sda24`, 57 GB); no S8 driver yet.
+- Storage is UFS (BOOT `sda7`, USERDATA `/dev/block/sda26`, 55,249,448,960
+  bytes per the TWRP by-name link); no S8 driver yet.
 
 ## Build pieces
 
@@ -899,10 +900,34 @@ built in CI or booted yet.
   startup. It does not demonstrate GPU probe/init, root mount, or a
   CoreAnimation draw. Automatic recovery did not occur within five minutes;
   whether the timer thread started is unknown.
-- Next: have the user return the phone to TWRP without wiping or flashing.
-  Pull pstore and persistent logs read-only, verify the BOOT prefix hash, and
-  diagnose why `s8autotwrp=90` did not return. Do not write BOOT again until
-  this is understood; GPU init and CoreAnimation drawing remain unverified.
+- On the subsequent TWRP return, resolved USERDATA as `/dev/block/sda26`
+  (55,249,448,960 bytes); `sda24` is only 5,242,880 bytes. A mistaken
+  diagnostic read from `sda24` returned zeros and was not USERDATA. The
+  correct 4,198,400-byte USERDATA tail matches the earlier area hash
+  `26cd3324cbce7fd243e8f3f8ca0f28ff25e4bb35edcde835b6a45940d56802de` and
+  decoded log hash
+  `4e1c6298c15fa5c30ae262a15b852585cb1c250f61cc4bfbd904667eb2b6cf8b`
+  (flush #81), so it contains no new attempt log. Current pmsg is 951 bytes
+  and garbled. Fixed the PowerShell log-pull helper to resolve USERDATA by
+  name and use local Python; the corrected helper ran successfully.
+- **Unintended write — agent error, 2026-11-25:** a malformed shell diagnostic
+  with nested quotes around `echo "$p -> ..."` was parsed by TWRP so `>` became
+  redirection. It overwrote BOOT bytes 0-47 with
+  `/dev/block/platform/11120000.ufs/by-name/BOOT -` plus newline, and USERDATA
+  bytes 0-51 with the corresponding `USERDATA` text. Current full 40 MiB
+  BOOT snapshot:
+  `F:\iOS Galaxy\backup\G950F-BOOT-after-corrected-stage3-20261125.img`,
+  SHA-256 `e32fd218f9d6d961f7b1e466ab8bcf3219151668fa42cf9674eae82ad95ccf9f`.
+  Against the validated candidate, only BOOT bytes 0-47 differ. The exact
+  original USERDATA header/full image was not found in the expected local
+  output directories; no USERDATA repair has been attempted. No other
+  partition write was issued. Phone is in TWRP with ADB connected. Do not
+  reboot. Get explicit user confirmation before restoring BOOT, and do not
+  write USERDATA without an exact verified source and approval.
+- Next: ask whether to restore BOOT from the validated candidate only, leaving
+  USERDATA untouched while locating its original header. Do not reboot until
+  BOOT has been repaired and readback-verified. GPU init and CoreAnimation
+  drawing remain unverified.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
