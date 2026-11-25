@@ -934,6 +934,15 @@ built in CI or booted yet.
   verified; USERDATA's HFSX signature at offset 1024 is intact, but the
   original bytes are not located and no filesystem check was run. GPU init
   and CoreAnimation drawing remain unverified.
+- At 20:48 UTC, user reported they then tried booting iOS themselves and it
+  appears stuck after a line transcribed as `ifnet_attach: All kernel threads
+  created for interface stf0 have been scheduled at least, ???`. This is XNU
+  BSD/network initialization output, after loader handoff; it does not prove
+  root mount or GUI startup. Workstation ADB currently sees no device, so the
+  live display/state is unverified. No agent-issued reboot/write followed the
+  user's no-reboot instruction. USERDATA bytes 0-51 remain altered; this might
+  affect root discovery but is not established as this stall's cause. Do not
+  initiate another reboot or write.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
