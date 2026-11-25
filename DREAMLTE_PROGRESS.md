@@ -1210,3 +1210,26 @@ built in CI or booted yet.
   another attempt. No device action was taken; do not retry before reaching
   50% and receiving fresh authorization.
 - Source fix/test commit: `02acba6`; initial handoff commit: `11b5872`.
+
+## Foreign Metal pipeline diagnostics (2026-11-25 23:09 UTC)
+
+- Inspected the iOS 27.2 public Metal headers. `MTLFunction` exposes its name
+  and function-constant metadata, but no source or AIR/IR extraction API was
+  found. Mapping a foreign function to a cached shader by name alone would be
+  speculative, so no translation or cache substitution was added.
+- `s8mtl_device.m` now reports foreign functions as unsupported when the Mali
+  draw path is active, rather than returning a successful pipeline object
+  with no GPU pipeline. A missing cached shader also returns an error. When
+  the draw path is unavailable, the existing stage-2 CPU-clear fallback is
+  preserved.
+- The stage-2 iOS plugin cross-compiles to a 139,008-byte bundle. The host
+  descriptor/job-chain regression passes: 74 Mesa archives, both load-action
+  passes produce 3 draws with 0 skipped, `4 submits, 0 failures`. These are
+  not device GPU results.
+- A stage-3 build compiled its objects but failed at link: `ld64.lld-18`
+  rejects the iOS 27.2 SDK's `arm64e.x1-ios` target in `libSystem.tbd`.
+  Therefore this is not a successful stage-3 build and the modified bundle
+  has not been installed or booted.
+- Confidence remains 25% for complete boot + touch + verified GPU
+  CoreAnimation, below the 50% pre-attempt threshold. No device action was
+  taken. Source change is pending commit.

@@ -181,20 +181,26 @@ static id s8_error(const char *what)
 	p->_colorFormat = [ca pixelFormat];
 	p->_blending = [ca isBlendingEnabled];
 	p->_id = ++count;
-	S8Function *vs = p->_vertex, *fs = p->_fragment;
-	/* Functions from other libraries (SpringBoard's own shaders, compiled
-	 * by MTLCompilerService, boot 51) are Metal's objects, not ours: no
-	 * GPU pipeline for them (their draws are skipped). */
-	BOOL foreign = (vs != nil && ![vs isKindOfClass:[S8Function class]]) ||
-	    (fs != nil && ![fs isKindOfClass:[S8Function class]]);
+	id vs_object = p->_vertex, fs_object = p->_fragment;
+	BOOL foreign = (vs_object != nil && ![vs_object isKindOfClass:[S8Function class]]) ||
+	    (fs_object != nil && ![fs_object isKindOfClass:[S8Function class]]);
 	if (foreign) {
 		static unsigned logged;
 		if (logged++ < 20)
-			s8_log("MTL pipeline %u: foreign functions %s %s / %s %s (no GPU pipeline)", p->_id,
-			    vs ? class_getName(object_getClass(vs)) : "-", vs ? [[(id)vs name] UTF8String] : "",
-			    fs ? class_getName(object_getClass(fs)) : "-", fs ? [[(id)fs name] UTF8String] : "");
-		return p;
+			s8_log("MTL pipeline %u: foreign functions %s %s / %s %s", p->_id,
+			    vs_object ? class_getName(object_getClass(vs_object)) : "-",
+			    vs_object ? [[vs_object name] UTF8String] : "",
+			    fs_object ? class_getName(object_getClass(fs_object)) : "-",
+			    fs_object ? [[fs_object name] UTF8String] : "");
+		if (s8d_init() != 0)
+			return p;
+		s8_log("MTL pipeline %u: foreign shader binary unavailable for Mali", p->_id);
+		if (error != NULL)
+			*error = s8_error("S8MaliMetal: foreign shader binary unavailable");
+		[p release];
+		return nil;
 	}
+	S8Function *vs = vs_object, *fs = fs_object;
 	s8_log("MTL pipeline %u: vs %s fs %s fmt %lu blend %d", p->_id,
 	    vs ? [vs->_name UTF8String] : "-", fs ? [fs->_name UTF8String] : "-",
 	    (unsigned long)p->_colorFormat, p->_blending);
@@ -239,7 +245,16 @@ static id s8_error(const char *what)
 			d.layouts[i].rate = (uint32_t)[l stepRate];
 		}
 	}
+	/* Keep stage 2's CPU-clear fallback when the GPU path is unavailable. */
+	if (s8d_init() != 0)
+		return p;
 	p->_gpu = s8d_pipeline_new(&d, p->_id);
+	if (p->_gpu == NULL) {
+		if (error != NULL)
+			*error = s8_error("S8MaliMetal: no matching cached Mali render pipeline");
+		[p release];
+		return nil;
+	}
 	return p;
 }
 
