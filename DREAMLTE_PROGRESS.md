@@ -751,10 +751,19 @@ built in CI or booted yet.
 - Added `@test_img` to the host harness, writing texture slot 3 like the two
   missing QuartzCore shaders. Mesa Pandecode validated both load-action
   passes: 3 draws each, 0 skipped, 4 submits, 0 failures.
+- Follow-up host validation: sparse image tables previously left slots 0-2
+  zero-filled for a slot-3 image, which Pandecode reported as invalid
+  ATTRIBUTE / ATTRIBUTE_BUFFER descriptors. Those holes now point to a valid
+  mapped 1x1 RGBA8 null image. The test rejects any `XXX: INVALID` diagnostic
+  and verifies both slot-3 64x64 image descriptors. Current-source run:
+  4 submits, 0 failures, no invalid descriptors.
 - Full QuartzCore compilation now succeeds: 135/135 functions, 36 varying
   names in 5 slots. The 1,047,796-byte diagnostic cache is outside Git at
   `F:\ios-sweet-temp\quartzcore-final.s8sc` (SHA-256
   `A06B1678C0455380E1D56642D23B6BA1DFDC4B76B08C6A75B17D685A161206A4`).
+- Recompiled all 135 functions against the same extracted QuartzCore library
+  after the descriptor change; output was 1,047,796 bytes, SHA-256
+  `81167BF622065FA830DCA19ED9695EDD036E8C983C8A34EB8B9EA7E7E70A6D42`.
 - This is host-side shader and descriptor validation only. No stage-3 image
   or kernel was built, and no Mali MMIO, phone partition, or real
   CoreAnimation draw was accessed. The iPhoneOS SDK remains on the Mac; the

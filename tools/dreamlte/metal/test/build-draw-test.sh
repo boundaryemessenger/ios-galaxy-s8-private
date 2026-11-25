@@ -60,4 +60,13 @@ eval cc $flags -DS8_TEST -I"$src/src/panfrost/lib" -I"$here/.." -idirafter "$her
 "$out/draw-test" "$out/test.s8sc" > "$out/draw-test.log" 2>&1 && rc=0 || rc=$?
 grep -E '^(====|S8 MALI)' "$out/draw-test.log"
 echo "decode log: $out/draw-test.log (exit $rc)"
+if grep -q 'XXX: INVALID' "$out/draw-test.log"; then
+	echo "Pandecode reported invalid descriptors" >&2
+	exit 1
+fi
+if [[ $(grep -c 'Type: 3D Linear' "$out/draw-test.log") -ne 8 ||
+      $(grep -c 'Row Stride: 0x100' "$out/draw-test.log") -ne 2 ]]; then
+	echo "Pandecode did not decode both storage-image descriptors" >&2
+	exit 1
+fi
 exit $rc

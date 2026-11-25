@@ -1238,11 +1238,29 @@ static int s8_image_tables(struct s8d_cmdbuf *cb, struct s8_stage_state *s,
 	struct s8_ptr b = s8_alloc_descs(&cb->arena, S8D_MAX_TEXTURES * 2 + 1, ATTRIBUTE_BUFFER);
 	if (!a.cpu || !b.cpu)
 		return -1;
-	memset(a.cpu, 0, S8D_MAX_TEXTURES * pan_size(ATTRIBUTE));
-	memset(b.cpu, 0, (S8D_MAX_TEXTURES * 2 + 1) * pan_size(ATTRIBUTE_BUFFER));
 
 	struct mali_attribute_packed *ad = a.cpu;
 	struct mali_attribute_buffer_packed *bd = b.cpu;
+	unsigned null_format = GENX(pan_format_from_pipe_format)(PIPE_FORMAT_R8G8B8A8_UNORM)->hw;
+	for (unsigned i = 0; i < S8D_MAX_TEXTURES; i++) {
+		pan_pack(&bd[i * 2], ATTRIBUTE_BUFFER, cfg) {
+			cfg.type = MALI_ATTRIBUTE_TYPE_3D_LINEAR;
+			cfg.pointer = s8g.statics.gpu + 0x400;
+			cfg.stride = 4 | (null_format << 10);
+			cfg.size = 4;
+		}
+		pan_cast_and_pack(&bd[i * 2 + 1], ATTRIBUTE_BUFFER_CONTINUATION_3D, cfg) {
+			cfg.s_dimension = 1;
+			cfg.t_dimension = 1;
+			cfg.r_dimension = 1;
+			cfg.row_stride = 4;
+		}
+		pan_pack(&ad[i], ATTRIBUTE, cfg) {
+			cfg.buffer_index = i * 2;
+			cfg.format = null_format << 10;
+		}
+	}
+
 	for (unsigned i = 0; i < S8D_MAX_TEXTURES; i++) {
 		if (!(sh->images_used & (UINT64_C(1) << i)))
 			continue;
