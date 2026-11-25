@@ -943,6 +943,16 @@ built in CI or booted yet.
   user's no-reboot instruction. USERDATA bytes 0-51 remain altered; this might
   affect root discovery but is not established as this stall's cause. Do not
   initiate another reboot or write.
+- At 21:01 UTC, user reports the phone is back in TWRP. ADB confirms
+  `recovery`, Galaxy S8 / `dreamlte`, BOOT `/dev/block/sda7`, USERDATA
+  `/dev/block/sda26`. Read-only hash of the first 19,118,096 BOOT bytes
+  matches corrected candidate SHA-256
+  `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.
+  Latest USERDATA ring remains 299,431 bytes, flush #81, exactly matching
+  the stale prior area/text hashes; it contains no evidence from this attempt.
+  The 951-byte pmsg is garbled. No write or reboot was issued during this
+  check. Leave the phone in TWRP; do not retry boot or modify USERDATA without
+  diagnosis and explicit user authorization.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
