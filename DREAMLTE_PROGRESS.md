@@ -845,12 +845,24 @@ built in CI or booted yet.
   backup is at `F:\iOS Galaxy\backup\G950F-BOOT-live-pre-stage3-20261125.img`
   and hashes to
   `086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`.
-- `adb reboot` was issued after readback verification. At 2026-11-25
-  19:59:18 UTC, ADB and fastboot had not re-enumerated after 240 seconds. The screen,
-  kernel progress, and whether the authorized overlay writes completed are
-  unknown. Do not repeat the reboot or any partition write. Wait for user
-  report; when TWRP reconnects, retrieve the persistent XNU log and inspect GPU
-  readiness / CoreAnimation draw output.
+- The user returned to TWRP; ADB reconnected at 20:01 UTC. Read-only check
+  confirms `/dev/block/sda7` begins with the exact candidate (hash of first
+  19,118,096 bytes matches
+  `1ee126acb4db0c5e1091fa26f430c9377e92c4687c021d4ba0f9ff78960d06e5`).
+  Full 40 MiB partition hash is
+  `497e77d076aa4e2494af2dcd7bb0ad5a2022bf922d5a7d43ee316399bf5be883`.
+- Pulled the USERDATA persistent XNU ring read-only to
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-postboot.log`. Header
+  reports 299,431 bytes, flush #81. It contains a normal iOS launch through
+  SpringBoard/backboardd and touch events, but no `S8 OVERLAY`, `S8 MALI`, or
+  GPU-init lines. Its launchd boot-args ends at `sweetfb_hz=30`, without
+  `sweetfb_gpu=1` or `s8metal=1`. This does not verify the stage-3 candidate
+  or overlay installation; it may be an earlier boot (the logged time is
+  1969-12-31; no pre-attempt ring snapshot exists).
+- TWRP pmsg ramoops is only 2,250 bytes and garbled after forced reboot, so
+  it provides no reliable loader/kernel diagnosis. User's display during the
+  attempt and whether candidate XNU ran remain unknown. Do not reboot or write
+  again before reconciling observations.
 - The overlay's persistent root writes were authorized and are configured for
   `/usr/appleinternal/sbin/launchd.s8` and
   `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, shader
