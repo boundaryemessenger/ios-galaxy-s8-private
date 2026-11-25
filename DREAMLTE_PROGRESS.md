@@ -12,6 +12,16 @@ Observations on the phone and build results are kept apart from plans.
 - Confidence is currently below that threshold: the latest boot stop point is
   unknown, saved logs are stale, and no end-to-end GPU draw is verified. Do
   not invent a numeric estimate from incomplete evidence.
+- Positive evidence: separate earlier S8 runs showed the iOS Home Screen and
+  completed a Mali fragment draw plus 60 full-screen GPU frames before normal
+  launchd startup; the current build compiles 135/135 QuartzCore shaders;
+  Actions run #11 (`45657021116`, source `826902b`) passes the synthetic
+  job-chain validator with 4 submits and 0 failures.
+- Remaining integration gap: stage-3 `S8MaliMetal` has no GPU pipeline for
+  foreign/private shader functions, and its fallback skips draw calls (only
+  clear operations are CPU-emulated). No real CoreAnimation frame has been
+  observed on the S8 with this stage-3 path. Component results therefore do
+  not meet the user's 75% end-to-end threshold.
 - Continue offline diagnosis. No reboot or partition write without fresh
   authorization. When the threshold is met, report the evidence and caveats;
   hardware success still requires a separately authorized, directly verified
@@ -1090,3 +1100,25 @@ built in CI or booted yet.
 - No source or device change is justified by these stale artifacts. Keep the
   phone in TWRP; no reboot/write was performed. Diagnosis remains open; do not
   claim the port fixed or GPU-ready.
+
+## End-to-end confidence review (2026-11-25 22:03 UTC)
+
+- Rechecked Actions run #11 (`45657021116`, head `826902b`): Mesa translator
+  and draw test succeeded; the job log ends with `4 submits, 0 failures`.
+  This is Pandecode validation of synthetic Mali job chains, not execution on
+  the S8 GPU.
+- The candidate preserved offline at
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-candidate-s8touch-off.img`
+  contains `s8gpu=1`, `sweetfb_gpu=1`, `s8metal=1`, `rootrw=1`,
+  `s8autotwrp=90`, and `s8touch=0`; SHA-256 is
+  `b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`.
+  It is diagnostic and intentionally disables touch.
+- Static review found that `S8MaliMetal` returns no GPU pipeline for foreign
+  shader functions (including shaders compiled by MTLCompilerService); its
+  stage-2 fallback skips draws and only emulates clear operations. The
+  QuartzCore 135/135 cache and prior user-space GPU draw do not demonstrate
+  that every real CoreAnimation pass is covered.
+- No device action was taken. Keep confidence below 75% for a complete,
+  touch-enabled iOS UI with a verified GPU-accelerated CoreAnimation frame.
+  Next evidence needed: fix or reliably route unsupported draws, then an
+  explicitly authorized stage-3 boot with fresh logs and a real frame check.
