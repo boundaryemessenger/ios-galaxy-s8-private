@@ -24,7 +24,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang-18 llvm-18-dev llvm-18-tools libclc-18 libclc-18-dev libllvmspirvlib-18-dev llvm-spirv-18 spirv-tools pipx ninja-build pkg-config python3-jinja2 python3-mako python3-ply python3-yaml libdrm-dev libelf-dev libexpat1-dev zlib1g-dev
+          sudo apt-get install -y build-essential clang-18 libclang-18-dev llvm-18-dev llvm-18-tools libclc-18 libclc-18-dev libllvmspirvlib-18-dev llvm-spirv-18 spirv-tools pipx ninja-build pkg-config python3-jinja2 python3-mako python3-ply python3-yaml libdrm-dev libelf-dev libexpat1-dev zlib1g-dev
           pipx install 'meson>=1.4,<2'
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
