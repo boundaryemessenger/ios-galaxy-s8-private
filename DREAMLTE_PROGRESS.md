@@ -1063,3 +1063,17 @@ built in CI or booted yet.
   Log capture was repeated at 21:48 UTC after the user returned to TWRP; it
   reproduced the same ring/text and pmsg hashes above, and confirmed the
   diagnostic BOOT image is still installed. No new boot evidence was found.
+
+## Offline boot-stall review (2026-11-25 21:53 UTC)
+
+- The older SWEETLOG contains the exact `ifnet_attach` completion line
+  reported for `stf0`; in that log it is followed by keypad/touch startup,
+  UFS discovery, and BSD/HFS root mount. The “Proceeding” line means interface
+  threads ran; it is not proof of a stall.
+- Patch 0129 is in the candidate's XNU source, but its `s8autotwrp` worker is
+  started from `sweet_ufs_rootdev()`. It cannot diagnose a hang before root
+  discovery. The unchanged flush-81 SWEETLOG and corrupted pmsg cannot locate
+  the latest attempt's stop point.
+- No source or device change is justified by these stale artifacts. Keep the
+  phone in TWRP; no reboot/write was performed. Diagnosis remains open; do not
+  claim the port fixed or GPU-ready.
