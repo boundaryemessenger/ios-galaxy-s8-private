@@ -927,13 +927,23 @@ built in CI or booted yet.
 - Per the user's explicit BOOT-only authorization, rewrote the validated
   19,118,096-byte candidate to `/dev/block/sda7`; exact-length readback SHA-256
   matched `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.
-  TWRP remained connected. No reboot was issued, and USERDATA was not touched
-  during this repair. Its first 52 bytes remain altered.
-- User explicitly chose to leave the phone in TWRP and not reboot. Respect
-  that; no reboot or USERDATA write is authorized. BOOT is repaired and
-  verified; USERDATA's HFSX signature at offset 1024 is intact, but the
-  original bytes are not located and no filesystem check was run. GPU init
-  and CoreAnimation drawing remain unverified.
+  TWRP remained connected. No reboot was issued.
+- User subsequently authorized restoring exactly 52 zero bytes at USERDATA
+  offset 0, and explicitly said not to reboot. Pre-write checks confirmed
+  TWRP `dreamlte`, USERDATA `/dev/block/sda26`, the known path-string damage
+  in bytes 0-51, zeroes in bytes 52-1023, and an intact HFSX header at offset
+  1024. The exact original bytes were unavailable; zero was strongly inferred
+  from `tools/mkiosroot.sh` creating a fresh image with `truncate` before
+  `mkfs.hfsplus` and from the remaining zeroed boot-block area. Wrote exactly
+  52 zero bytes via `dd bs=1 count=52 conv=fsync`. Readback verified bytes
+  0-51 zero, bytes 52-4095 unchanged from the pre-write capture, and the HFSX
+  primary header preserved. No fsck or boot was run; this only repairs the
+  accidental prefix and does not establish that iOS will boot.
+- User's no-reboot instruction remains in force. The only subsequent
+  USERDATA authorization was the exact 52-byte zeroing operation above. BOOT
+  is repaired and hash-verified. Do not reboot or modify other USERDATA ranges
+  without fresh approval. GPU init and CoreAnimation drawing remain
+  unverified.
 - At 20:48 UTC, user reported they then tried booting iOS themselves and it
   appears stuck after a line transcribed as `ifnet_attach: All kernel threads
   created for interface stf0 have been scheduled at least, ???`. This is XNU
