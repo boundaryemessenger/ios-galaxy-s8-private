@@ -979,3 +979,19 @@ built in CI or booted yet.
   cache). This boot attempt does not establish GPU acceleration: no on-device
   Mali draw, display/touch correctness, or stability result has been observed.
   ACPM firmware/clock and optional D22AP `/product` caveats remain.
+- At 21:20 UTC, ADB is connected to `recovery` on `dreamlte`. Read-only
+  SHA-256 of the installed BOOT candidate's first 19,118,096 bytes matches
+  `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.
+  USERDATA bytes 0-63 are zero and its HFSX `HX` signature remains at offset
+  1024. The captured persistent SWEETLOG is still flush #81 with the same
+  stale ring/text hashes; `/sys/fs/pstore` has no pmsg file. That older
+  decoded log contains the user's transcribed `A5XELTE KEYS: GPA2 con=0
+  dat=0x1 pud=0xd555 (read only)` line and then continues through S8 touch,
+  UFS discovery, HFS root mount, launchd, and SpringBoard. This rules out the
+  GPIO diagnostic itself being a terminal line in that earlier boot only;
+  it does not identify the latest attempt's stop point. No filesystem check,
+  partition write, or reboot was performed. The log-pull helper now decodes
+  SWEETLOG when pmsg is absent, reports pmsg unavailable, and was verified
+  against this recovery session. A boot-specific capture is still required
+  to diagnose the latest attempt; do not boot again without fresh explicit
+  authorization.
