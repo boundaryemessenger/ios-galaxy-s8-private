@@ -816,23 +816,31 @@ built in CI or booted yet.
   revision through `826902b` was empty. Therefore the filename
   `kernel.development.a5xelte` was not evidence that the S8 board code was
   absent; the earlier blocker conclusion was incorrect.
-- Assembled, without device access, `F:\ios-sweet-temp\stage3-overlay-27.2\
-  s8-stage3-candidate.img` using that kernel, the complete stage-3 overlay,
-  and the preserved no-GPU BOOT baseline as Samsung header/DT input. Candidate
-  is 19,118,096 bytes, SHA-256
-  `68bd4508a48628497667ff9f0c77c52663551b3593d789f5d511037c63d3f56b`.
-  The outer Samsung image, SWEETXNU v1 payload, 11 segment table, requested
-  boot args, ADT `S8Overlay` mapping, and embedded 1,980,912-byte S8OVL1
-  archive were independently parsed and validated. It fits the 40 MiB BOOT
-  partition. Preserved baseline hash:
+- The first offline image omitted `sweetfb_gpu=1`; inspection of this exact
+  kernel's `SweetFramebuffer.cpp` showed that this arg is required before
+  `s8metal=1` can publish the Metal accelerator. Rebuilt corrected candidate
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-candidate-gpu.img` with
+  `sweetfb_gpu=1`, `s8metal=1`, `sweetfb_hz=30`, `cpus=4`, and
+  `s8autotwrp=90`. It uses the complete overlay and preserved BOOT baseline
+  only as Samsung header/DT input. Size 19,118,096 bytes; SHA-256
+  `1ee126acb4db0c5e1091fa26f430c9377e92c4687c021d4ba0f9ff78960d06e5`.
+  Validated the outer image, SWEETXNU v1 payload, 11 segments, command line,
+  ADT `S8Overlay` mapping, and exact 1,980,912-byte embedded archive.
+- Read-only ADB on 2026-11-25 19:49 UTC confirms the SM-G950F/`dreamlte`
+  remains in TWRP; BOOT resolves to `/dev/block/sda7` (40 MiB). Current live
+  BOOT SHA-256 is
+  `086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`,
+  not the preserved baseline hash
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`.
-- Candidate args include `cpus=4 rootrw=1 sweetfb_native=1 sweetfb_hz=30
-  s8metal=1 s8autotwrp=90`; the independent `s8gpu=4` path is not enabled.
-  `d22ap.adt` was unavailable, so the generated ADT lacks its optional
-  D22AP `/product` node.
-- This is packaging validation only: the candidate has not been booted,
-  flashed, or used to access GPU MMIO. ACPM firmware loading/rights and safe
-  G3D power/clock sequencing are still unresolved. Do not boot until those
-  prerequisites are verified/bounded and the user approves the exact
-  temporary boot. Actual CoreAnimation draw, visual correctness, touch, and
-  stability remain untested.
+  Do not overwrite or flash current BOOT.
+- The corrected candidate has not been booted/flashed; no root overlay writes
+  or GPU MMIO occurred. With `rootrw=1`, the overlay persistently writes
+  `/usr/appleinternal/sbin/launchd.s8` and
+  `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, and shader
+  cache) into the iOS root. Await explicit approval for those side effects
+  before a temporary `fastboot boot`. The driver checks G3D power-domain
+  status and leaves GPU registers untouched/falls back to CPU when off; this
+  guard is not proof of ACPM firmware availability or stable G3D clocking.
+  `d22ap.adt` remains absent (generated ADT has no optional D22AP `/product`
+  node). CoreAnimation draw, visual correctness, touch, and stability remain
+  untested.
