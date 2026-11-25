@@ -722,10 +722,17 @@ built in CI or booted yet.
 - air2nir fixes: inline sampler states and constant tables were never
   written (self-assignment). New lowerings: load_raw_vertex_offset_pan
   (most failing vertex shaders) and txs (blur and fixed_frag shaders).
-- The local Windows/WSL build of the shader cache gave 104/135 functions
-  (Mesa built with assertions). The earlier 133/135 was likely a build
-  without assertions, so those back-end failures went unnoticed. Rebuild in
-  progress with the lowerings above.
+- Fresh WSL Ubuntu 24.04 build against the iOS 16.7.16 (20H392)
+  QuartzCore `default.metallib`: Mesa 25.2.8 at `f97d7dc`, all 74 static
+  archives built, and `air2nir` linked. The shader compiler produced
+  133/135 functions; the only reported failures are `inplace_copy_lpf` and
+  `inplace_copy_lph`, both requiring unsupported `air.write_texture_2d`
+  image stores. This confirms the earlier 133/135 count but does not show
+  that these functions are unused by CoreAnimation. The generated cache is
+  partial and must not be packaged as complete. `build-shaders.py` now exits
+  nonzero for any missing/empty shader, and `stage3-image.sh` prints the
+  compiler log and aborts instead of accepting a partial cache. No GPU or
+  phone hardware was accessed.
 - Boot plan: kernel CI run 39976717941 (merge 504134c, includes
   S8MALI_MAP_SURFACE), boot-50 command line, overlay = bundle with the draw
   path + `quartzcore.s8sc`. Boot twice: the overlay installs on the first

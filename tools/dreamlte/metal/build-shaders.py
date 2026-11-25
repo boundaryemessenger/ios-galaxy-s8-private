@@ -75,7 +75,7 @@ def main():
                                capture_output=True, text=True)
             msg = [l for l in r.stderr.splitlines() if 'unsupported' in l or 'error' in l.lower()
                    or 'air2nir: fail' in l]
-            ok = r.returncode == 0 and os.path.exists(o)
+            ok = r.returncode == 0 and os.path.isfile(o) and os.path.getsize(o) > 0
             return f['name'], (open(o, 'rb').read() if ok else None), r.returncode, msg, r.stderr
 
         results = list(ThreadPoolExecutor(jobs).map(build, todo))
@@ -94,6 +94,8 @@ def main():
         fh.write(b'S8SC' + struct.pack('<II', 1, len(good)) + index + blob)
     print(f'{out}: {len(good)}/{len(todo)} functions, {off} bytes, {len(slots)} varyings in '
           f'{max(slots.values()) + 1} slots')
+    if len(good) != len(todo):
+        sys.exit(f'incomplete shader cache: {len(todo) - len(good)} of {len(todo)} functions failed')
 
 
 if __name__ == '__main__':
