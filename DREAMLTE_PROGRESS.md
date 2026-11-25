@@ -1011,3 +1011,12 @@ built in CI or booted yet.
   minutes. Treat the console as stalled, without inferring the exact blocked
   function from the last print. No further reboot or write is authorized;
   fresh logs require returning the handset to TWRP first.
+- User then reports the phone is in TWRP. Read-only post-boot capture confirms
+  the SWEETLOG remains flush #81 with the same old ring/text hashes and has no
+  evidence from this test. `pmsg-ramoops-0` is 951 bytes with SHA-256
+  `31d7fe097c6c6abc9a3d7b138e42fd29a07c74a0f92a6279643830b1437989cf`,
+  different from the earlier capture but still garbled with no reliable XNU
+  stage marker. `/proc/last_kmsg` (24,920 bytes) is Samsung S-Boot 4.0 output
+  for the TWRP boot and ends at `Starting kernel`; it is not the failed iOS
+  kernel log. No recovery reboot or partition write was issued for capture.
+  The reason this boot stops after touch enable remains unresolved.
