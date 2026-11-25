@@ -1232,4 +1232,4 @@ built in CI or booted yet.
   has not been installed or booted.
 - Confidence remains 25% for complete boot + touch + verified GPU
   CoreAnimation, below the 50% pre-attempt threshold. No device action was
-  taken. Source change is pending commit.
+  taken. Source fix commit: `95143f8`; root handoff commit: `db58a0d`.
