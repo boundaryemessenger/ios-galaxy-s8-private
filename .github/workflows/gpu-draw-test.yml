@@ -1,0 +1,39 @@
+name: DREAMLTE Metal draw validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Git ref containing the DREAMLTE Metal source to validate
+        required: true
+        default: claude/zealous-planck-oi3hse
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  draw-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang-18 llvm-18-dev llvm-18-tools pipx ninja-build pkg-config python3-jinja2 python3-mako python3-ply python3-yaml libdrm-dev libelf-dev libexpat1-dev zlib1g-dev
+          pipx install 'meson>=1.4,<2'
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Configure Mesa Panfrost v6 tools
+        run: |
+          git clone --depth 1 --branch mesa-25.2.8 https://gitlab.freedesktop.org/mesa/mesa.git "$RUNNER_TEMP/mesa-src"
+          meson setup "$RUNNER_TEMP/mesa-build" "$RUNNER_TEMP/mesa-src" --buildtype=release -Dprefix=/usr -Dtools=panfrost -Dgallium-drivers=panfrost -Dvulkan-drivers= -Dplatforms= -Dopengl=false -Dglx=disabled -Degl=disabled -Dgbm=disabled -Dllvm=disabled -Dbuild-tests=false -Dvideo-codecs=
+
+      - name: Build shader translator and validate Mali job chains
+        run: |
+          bash tools/dreamlte/metal/build-air2nir.sh "$RUNNER_TEMP/mesa-src" "$RUNNER_TEMP/mesa-build" "$RUNNER_TEMP/air2nir"
+          bash tools/dreamlte/metal/test/build-draw-test.sh "$RUNNER_TEMP/mesa-src" "$RUNNER_TEMP/mesa-build" "$RUNNER_TEMP/air2nir" "$RUNNER_TEMP/draw-test"
