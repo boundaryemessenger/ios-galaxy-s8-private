@@ -832,13 +832,20 @@ built in CI or booted yet.
   `086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`,
   not the preserved baseline hash
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`.
-  Do not overwrite or flash current BOOT.
+  Do not overwrite without fresh exact approval.
+- User approved a temporary boot and overlay writes, but no standard fastboot
+  device is exposed. The S8 project assessment notes Download Mode and no
+  established non-writing load path; `fastboot.exe` is present on the host,
+  while `fastboot devices` is empty in TWRP. No reboot was sent. Temporary-boot
+  approval is not BOOT-write approval; ask before replacing `/dev/block/sda7`.
 - The corrected candidate has not been booted/flashed; no root overlay writes
   or GPU MMIO occurred. With `rootrw=1`, the overlay persistently writes
   `/usr/appleinternal/sbin/launchd.s8` and
   `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, and shader
-  cache) into the iOS root. Await explicit approval for those side effects
-  before a temporary `fastboot boot`. The driver checks G3D power-domain
+  cache) into the iOS root. The user approved these writes for a temporary
+  boot, but the device has no established temporary boot transport. Await
+  explicit approval for BOOT replacement before using another boot path.
+  The driver checks G3D power-domain
   status and leaves GPU registers untouched/falls back to CPU when off; this
   guard is not proof of ACPM firmware availability or stable G3D clocking.
   `d22ap.adt` remains absent (generated ADT has no optional D22AP `/product`
