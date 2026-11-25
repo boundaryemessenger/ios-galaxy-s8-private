@@ -1027,7 +1027,16 @@ built in CI or booted yet.
   It preserves the installed candidate's kernel, loader, DT, and overlay;
   verified that exactly 10 bytes in the SWEETXNU cmdline field changed,
   adding only `s8touch=0`. This isolates the touch initialization path. It
-  has not been written to BOOT or booted. Next step requires explicit
-  authorization to write this exact image to BOOT and run one diagnostic
-  test; its `rootrw=1` path may update only the configured overlay and
-  SWEETLOG files on USERDATA.
+  is diagnostic only, not a confirmed fix.
+- User authorized this exact BOOT write and one test boot. Before writing,
+  verified TWRP `dreamlte`, BOOT `/dev/block/sda7` (40 MiB), and candidate
+  SHA-256. Saved a full 40 MiB BOOT backup at
+  `F:\iOS Galaxy\backup\G950F-BOOT-before-s8touch-off-20261125.img`,
+  SHA-256 `4f8b072f9a3eee7c920efc83f64e9510bc07aef8613976d354b355eae0cdb2dd`.
+  Wrote only the 19,118,096-byte diagnostic candidate to BOOT and verified
+  its readback SHA-256 is
+  `b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`.
+  Issued one `adb reboot`; ADB did not reconnect within 180 seconds. This
+  test has not established that disabling touch fixes or moves the stall.
+  The current screen after this diagnostic boot is not yet reported. No
+  further reboot or partition write without fresh approval.
