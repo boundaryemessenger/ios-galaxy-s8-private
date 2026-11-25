@@ -1006,6 +1006,8 @@ built in CI or booted yet.
   `dreamlte_touch_start()` prints this after the S6SY761 accepts its enable
   commands and immediately before it starts the touch worker. This confirms
   touch-controller enable, not worker startup, root mount, GUI, or GPU. The
-  saved SWEETLOG remains stale and ADB/fastboot are unavailable. Time on the
-  line is unknown. Do not retry boot or modify partitions; get screen duration
-  and status before choosing any further diagnostics.
+  saved SWEETLOG remains stale and ADB/fastboot are unavailable. User
+  subsequently confirms the line remained unchanged for more than five
+  minutes. Treat the console as stalled, without inferring the exact blocked
+  function from the last print. No further reboot or write is authorized;
+  fresh logs require returning the handset to TWRP first.
