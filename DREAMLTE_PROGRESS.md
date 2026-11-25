@@ -1209,3 +1209,4 @@ built in CI or booted yet.
   remains 25% for the complete target, below the user's 50% minimum before
   another attempt. No device action was taken; do not retry before reaching
   50% and receiving fresh authorization.
+- Source fix/test commit: `02acba6`; initial handoff commit: `11b5872`.
