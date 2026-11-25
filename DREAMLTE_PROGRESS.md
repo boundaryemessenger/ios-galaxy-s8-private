@@ -1060,3 +1060,6 @@ built in CI or booted yet.
   progress message and did not show `S8 TOUCH: disabled`. Thus this test does
   not isolate touch as the failure cause. No reboot or partition write was
   performed for log capture. Diagnosis remains open; do not claim readiness.
+  Log capture was repeated at 21:48 UTC after the user returned to TWRP; it
+  reproduced the same ring/text and pmsg hashes above, and confirmed the
+  diagnostic BOOT image is still installed. No new boot evidence was found.
