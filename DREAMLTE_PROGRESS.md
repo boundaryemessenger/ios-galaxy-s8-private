@@ -920,14 +920,19 @@ built in CI or booted yet.
   SHA-256 `e32fd218f9d6d961f7b1e466ab8bcf3219151668fa42cf9674eae82ad95ccf9f`.
   Against the validated candidate, only BOOT bytes 0-47 differ. The exact
   original USERDATA header/full image was not found in the expected local
-  output directories; no USERDATA repair has been attempted. No other
-  partition write was issued. Phone is in TWRP with ADB connected. Do not
-  reboot. Get explicit user confirmation before restoring BOOT, and do not
-  write USERDATA without an exact verified source and approval.
-- Next: ask whether to restore BOOT from the validated candidate only, leaving
-  USERDATA untouched while locating its original header. Do not reboot until
-  BOOT has been repaired and readback-verified. GPU init and CoreAnimation
-  drawing remain unverified.
+  output directories; no USERDATA repair has been attempted. The command also
+  overwrote USERDATA bytes 0-51. Read-only inspection shows the HFSX signature
+  (`HX`) at offset 1024 remains, but filesystem integrity is not checked. No
+  other partition write was issued.
+- Per the user's explicit BOOT-only authorization, rewrote the validated
+  19,118,096-byte candidate to `/dev/block/sda7`; exact-length readback SHA-256
+  matched `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.
+  TWRP remained connected. No reboot was issued, and USERDATA was not touched
+  during this repair. Its first 52 bytes remain altered.
+- Next: make no reboot or USERDATA write until the user explicitly authorizes
+  it. BOOT is repaired and verified; USERDATA's HFSX signature at offset 1024
+  is intact, but the original bytes are not located and no filesystem check
+  was run. GPU init and CoreAnimation drawing remain unverified.
 - User reports (2026-11-25 20:01 UTC) seeing a console for about three minutes
   during the candidate attempt before returning to TWRP. This is consistent
   with the loader console but does not prove which stage ran; user does not
