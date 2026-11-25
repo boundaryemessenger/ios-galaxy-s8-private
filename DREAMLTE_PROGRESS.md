@@ -1155,3 +1155,26 @@ built in CI or booted yet.
   GPU-rendered CoreAnimation frame. No reboot, flash, or partition write was
   performed. A fresh explicit approval is required before testing the
   touch-enabled candidate.
+
+## Authorized touch-enabled diagnostic boot (2026-11-25)
+
+- With the user's explicit approval, wrote the verified 19,118,096-byte
+  touch-enabled candidate (`s8-stage3-candidate-gpu-enabled.img`, SHA-256
+  `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`) to
+  BOOT `/dev/block/sda7`. Beforehand, confirmed TWRP/`dreamlte`, the previous
+  touch-disabled BOOT prefix, and the preserved 40 MiB BOOT backup
+  (`086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`).
+  Candidate transfer and exact-length BOOT readback hashes matched. No other
+  partition was written.
+- Issued one authorized reboot. ADB and fastboot were still absent after
+  180 seconds. The user reports an unchanged kernel console with
+  `S8 TOUCH: down id=7 x=0 y=0` or
+  `Failed to write boot-picker-bringup-reason to NVRAM`; exact last line is
+  uncertain. Source confirms touch IDs >=5 are logged but not forwarded to
+  Sweet HID, so id 7 is not proof of iOS touch. The NVRAM message is known
+  from earlier boots as a nonfatal warning. No fresh persistent log, root
+  mount, iOS UI, or real GPU draw was verified.
+- The diagnostic boot did not identify a root cause or reach the end-to-end
+  acceptance criteria. Confidence remains 25% for touch-enabled iOS plus a
+  verified GPU-rendered CoreAnimation frame. Do not reboot or write again
+  without fresh explicit authorization.
