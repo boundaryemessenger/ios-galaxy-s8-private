@@ -31,7 +31,7 @@ jobs:
       - name: Configure Mesa Panfrost v6 tools
         run: |
           git clone --depth 1 --branch mesa-25.2.8 https://gitlab.freedesktop.org/mesa/mesa.git "$RUNNER_TEMP/mesa-src"
-          meson setup "$RUNNER_TEMP/mesa-build" "$RUNNER_TEMP/mesa-src" --buildtype=release -Dprefix=/usr -Dtools=panfrost -Dgallium-drivers=panfrost -Dvulkan-drivers= -Dplatforms= -Dopengl=false -Dglx=disabled -Degl=disabled -Dgbm=disabled -Dllvm=disabled -Dbuild-tests=false -Dvideo-codecs=
+          meson setup "$RUNNER_TEMP/mesa-build" "$RUNNER_TEMP/mesa-src" --buildtype=release -Dprefix=/usr -Dtools=panfrost -Dgallium-drivers=panfrost -Dvulkan-drivers= -Dplatforms= -Dopengl=false -Dglx=disabled -Degl=disabled -Dgbm=disabled -Dllvm=enabled -Dbuild-tests=false -Dvideo-codecs=
 
       - name: Build shader translator and validate Mali job chains
         run: |
