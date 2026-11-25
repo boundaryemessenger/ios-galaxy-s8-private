@@ -836,21 +836,24 @@ built in CI or booted yet.
 - Made a read-only 40 MiB live BOOT backup at
   `F:\iOS Galaxy\backup\G950F-BOOT-live-pre-stage3-20261125.img`; its SHA-256
   exactly matches the live partition (`086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`).
-- User approved a temporary boot and overlay writes, but no standard fastboot
-  device is exposed. The S8 project assessment notes Download Mode and no
-  established non-writing load path; `fastboot.exe` is present on the host,
-  while `fastboot devices` is empty in TWRP. No reboot was sent. Temporary-boot
-  approval is not BOOT-write approval; ask before replacing `/dev/block/sda7`.
-- The corrected candidate has not been booted/flashed; no root overlay writes
-  or GPU MMIO occurred. With `rootrw=1`, the overlay persistently writes
+- After the user authorized BOOT replacement, on 2026-11-25 TWRP wrote
+  19,118,096 bytes of the corrected candidate to `/dev/block/sda7`; `dd`
+  completed and the
+  readback SHA-256 of that exact range matched
+  `1ee126acb4db0c5e1091fa26f430c9377e92c4687c021d4ba0f9ff78960d06e5`.
+  No other partition was written. The previous complete 40 MiB live BOOT
+  backup is at `F:\iOS Galaxy\backup\G950F-BOOT-live-pre-stage3-20261125.img`
+  and hashes to
+  `086da7a053e87b4ddbee6c5be82b4303d8e05948e10295c4947d5e41530db8c1`.
+- `adb reboot` was issued after readback verification. At 2026-11-25
+  19:59:18 UTC, ADB and fastboot had not re-enumerated after 240 seconds. The screen,
+  kernel progress, and whether the authorized overlay writes completed are
+  unknown. Do not repeat the reboot or any partition write. Wait for user
+  report; when TWRP reconnects, retrieve the persistent XNU log and inspect GPU
+  readiness / CoreAnimation draw output.
+- The overlay's persistent root writes were authorized and are configured for
   `/usr/appleinternal/sbin/launchd.s8` and
-  `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, and shader
-  cache) into the iOS root. The user approved these writes for a temporary
-  boot, but the device has no established temporary boot transport. Await
-  explicit approval for BOOT replacement before using another boot path.
-  The driver checks G3D power-domain
-  status and leaves GPU registers untouched/falls back to CPU when off; this
-  guard is not proof of ACPM firmware availability or stable G3D clocking.
-  `d22ap.adt` remains absent (generated ADT has no optional D22AP `/product`
-  node). CoreAnimation draw, visual correctness, touch, and stability remain
-  untested.
+  `/System/Library/Extensions/S8MaliMetal.bundle/` (plugin, plist, shader
+  cache). This boot attempt does not establish GPU acceleration: no on-device
+  Mali draw, display/touch correctness, or stability result has been observed.
+  ACPM firmware/clock and optional D22AP `/product` caveats remain.
