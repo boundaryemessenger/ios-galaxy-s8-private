@@ -4,6 +4,19 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## User reporting threshold (2026-11-25 21:55 UTC)
+
+- User asks to be notified once evidence supports at least 75% confidence that
+  the port will work. Interpret this as a complete iOS boot with touch and a
+  real GPU-accelerated CoreAnimation draw, not merely an XNU console milestone.
+- Confidence is currently below that threshold: the latest boot stop point is
+  unknown, saved logs are stale, and no end-to-end GPU draw is verified. Do
+  not invent a numeric estimate from incomplete evidence.
+- Continue offline diagnosis. No reboot or partition write without fresh
+  authorization. When the threshold is met, report the evidence and caveats;
+  hardware success still requires a separately authorized, directly verified
+  device test.
+
 ## Hardware facts measured on the phone (2026-10-20)
 
 Read from TWRP (`/proc/cpuinfo`, `/proc/iomem`, `/sys/firmware/fdt`) and with
