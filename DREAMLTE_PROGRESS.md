@@ -1044,3 +1044,8 @@ built in CI or booted yet.
   scheduled and “Proceeding”; it is a progress marker, not a wait/failure
   message. The precise final line and later blocked stage remain unknown.
   No further reboot or partition write without fresh approval.
+- User authorized returning to TWRP for read-only logs. The handset is still
+  at the console with no ADB/fastboot connection, so the agent cannot initiate
+  that restart remotely. No restart or partition write has been issued since
+  the diagnostic boot. Await the user's hardware-button return to TWRP, then
+  capture logs read-only; do not flash or boot again.
