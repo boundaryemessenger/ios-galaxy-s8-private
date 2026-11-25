@@ -797,8 +797,42 @@ built in CI or booted yet.
   Parsed the overlay and checked its seven entries, executable, bundle plist,
   plugin, and 1,047,796-byte complete QuartzCore cache. This is an overlay
   artifact, not a BOOT image or hardware validation.
-- BOOT image assembly is blocked: the local S8 repository preserves three
-  40 MiB stock BOOT backups, but no current compatible DREAMLTE XNU kernel
-  artifact is present. Do not substitute the older A5XELTE artifact. No
-  phone boot, GPU MMIO, or partition write was attempted. ACPM firmware
-  rights/loading and safe G3D power/clock sequencing remain unverified.
+- BOOT image assembly was blocked based on an incorrect interpretation of a
+  kernel artifact's filename. See the corrected verification and candidate
+  status below.
+
+## Corrected CI kernel verification and offline stage-3 candidate (2026-11-25)
+
+- Actions run #3 (`45648104310`) built source
+  `c7651528a26c222b1fcb3337f30270db7ddc3c8c` with
+  `kernel_config=DEVELOPMENT`, `machine_config=A5XELTE` on macOS 13.5. The
+  supported XNU config is A5XELTE; patch `0124-dreamlte-s8.patch` defines
+  `DREAMLTE` in `A5XELTE.h`. The archived build tree contains that define,
+  `dreamlte_s8.c`, `s8_gpu.c`, `S8GPU.cpp`, and the `SweetFramebuffer.cpp`
+  `S8MALI_MAP_SURFACE` ioctl implementation. The downloaded kernel's SHA-256
+  matches the artifact's `SHA256SUMS`:
+  `a45420f76f44bb10b7137e65ae931931767c5f1a3bbbfd0e6f017e343d976332`.
+  Its binary contains `s8gpu_surface_va`. The XNU source diff from this run's
+  revision through `826902b` was empty. Therefore the filename
+  `kernel.development.a5xelte` was not evidence that the S8 board code was
+  absent; the earlier blocker conclusion was incorrect.
+- Assembled, without device access, `F:\ios-sweet-temp\stage3-overlay-27.2\
+  s8-stage3-candidate.img` using that kernel, the complete stage-3 overlay,
+  and the preserved no-GPU BOOT baseline as Samsung header/DT input. Candidate
+  is 19,118,096 bytes, SHA-256
+  `68bd4508a48628497667ff9f0c77c52663551b3593d789f5d511037c63d3f56b`.
+  The outer Samsung image, SWEETXNU v1 payload, 11 segment table, requested
+  boot args, ADT `S8Overlay` mapping, and embedded 1,980,912-byte S8OVL1
+  archive were independently parsed and validated. It fits the 40 MiB BOOT
+  partition. Preserved baseline hash:
+  `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`.
+- Candidate args include `cpus=4 rootrw=1 sweetfb_native=1 sweetfb_hz=30
+  s8metal=1 s8autotwrp=90`; the independent `s8gpu=4` path is not enabled.
+  `d22ap.adt` was unavailable, so the generated ADT lacks its optional
+  D22AP `/product` node.
+- This is packaging validation only: the candidate has not been booted,
+  flashed, or used to access GPU MMIO. ACPM firmware loading/rights and safe
+  G3D power/clock sequencing are still unresolved. Do not boot until those
+  prerequisites are verified/bounded and the user approves the exact
+  temporary boot. Actual CoreAnimation draw, visual correctness, touch, and
+  stability remain untested.
