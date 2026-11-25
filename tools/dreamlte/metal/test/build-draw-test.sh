@@ -36,3 +36,22 @@ for e in json.load(open(os.path.join(bld, 'compile_commands.json'))):
                 skip = False
                 continue
             if a in ('-o', '-MF', '-MQ', '-c'):
+                skip = True
+                continue
+            if a == '-MD' or a.endswith('.c') or a.startswith('-W'):
+                continue
+            if a.startswith('-I') and not os.path.isabs(a[2:]):
+                a = '-I' + os.path.normpath(os.path.join(bld, a[2:]))
+            out.append(a)
+        print(' '.join(shlex.quote(a) for a in out))
+        break
+PY
+)
+libs=$(cd "$bld" && find src -name '*.a' | grep -E 'panfrost|pan-|pandecode|libnir|mesa_util|blake3|compiler|c11|libpankmod|midgard|valhall' | sed "s#^#$bld/#")
+eval cc $flags -DS8_TEST -I"$src/src/panfrost/lib" -I"$here/.." -idirafter "$here/../../ios/stub" -Wall -Wno-unused-parameter -g \
+	'"$here/draw-test.c"' '"$here/../s8mtl_draw.c"' -Wl,--start-group $libs -Wl,--end-group \
+	-lm -lpthread -lz -ldl -lexpat -ldrm -fopenmp -o '"$out/draw-test"'
+"$out/draw-test" "$out/test.s8sc" > "$out/draw-test.log" 2>&1 && rc=0 || rc=$?
+grep -E '^(====|S8 MALI)' "$out/draw-test.log"
+echo "decode log: $out/draw-test.log (exit $rc)"
+exit $rc
