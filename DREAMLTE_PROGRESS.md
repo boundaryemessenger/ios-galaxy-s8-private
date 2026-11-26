@@ -6,28 +6,27 @@ Observations on the phone and build results are kept apart from plans.
 
 ## Metal path rebased on the known-good boot (2026-11-26)
 
-- Latest device action: with the user's explicit authorization to test despite
-  the 25% confidence estimate, the candidate was written only to BOOT
-  `/dev/block/sda7` and synced. TWRP confirmed the BOOT symlink and 40 MiB
-  partition. Fresh pre-write backup
-  `F:\iOS Galaxy\backup\G950F-BOOT-pre-metal-final-20261126-1121.img`
-  (SHA-256
-  `f12a8f410e00bc870cf82719e64923d1b80676eaeac6a8880e58339073320c7e`).
-  Full readback confirms the first 19,144,720 bytes match the candidate
-  exactly (SHA-256
-  `070530c1d2cdd6d1db25d094ae436f33849c399cbad0aa030c9938282e281558`) and
-  the partition suffix is unchanged from the backup; full BOOT SHA-256 after
-  the write is
+- Metal candidate test: after explicit user authorization, wrote the
+  19,144,720-byte candidate only to BOOT `/dev/block/sda7`. Fresh pre-write
+  backup `F:\iOS Galaxy\backup\G950F-BOOT-pre-metal-final-20261126-1121.img`
+  SHA-256 `f12a8f410e00bc870cf82719e64923d1b80676eaeac6a8880e58339073320c7e`.
+  Full readback matched the candidate prefix
+  (`070530c1d2cdd6d1db25d094ae436f33849c399cbad0aa030c9938282e281558`) and
+  the backup suffix. Issued one reboot at 11:23 UTC. ADB/fastboot were absent
+  through 11:28:40 UTC; the user reported a console line resembling the
+  legacy `A5XELTE KEYS` diagnostic, unchanged for about two minutes. An older
+  log passes that line and reaches SpringBoard, which does not establish
+  progress in this attempt.
+- Current device state: at the user's request, restored the full 40 MiB
+  CPU-rendered baseline to BOOT. Fresh pre-restore backup
+  `F:\iOS Galaxy\backup\G950F-BOOT-before-cpu-baseline-restore-20261126-1134.img`
+  SHA-256
   `b6b13d849c513a0dd047594c6ef265af3b6886c253c7972e552d2d8c86356ad8`.
-  No other partition was written. The authorized single reboot was issued at
-  11:23 UTC. Read-only ADB/fastboot checks from 11:23:53 through 11:28:40 UTC
-  found no connected device. The user reports the XNU console currently ends
-  with `GXELTE KEYS: GPR2 con=0 dat=0x1 pud=0xd555 (read only)`. This resembles
-  the legacy `A5XELTE KEYS: GPA2 ...` diagnostic in patch 0118. An older
-  persistent log has that line followed by S8 touch, UFS/root mount, launchd,
-  and SpringBoard; that does not establish progress in this boot. The user
-  reports the line was unchanged for about two minutes; the later boot stage
-  is unknown. No second reboot or further write was issued.
+  Full BOOT readback is byte-identical to the preserved CPU-only baseline
+  (SHA-256
+  `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`).
+  TWRP remains connected. USERDATA and all other partitions were untouched.
+  No reboot has been issued after the restore; wait for fresh authorization.
 - The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
   its previously working 17,031,184-byte image prefix hashes to
