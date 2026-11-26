@@ -25,8 +25,12 @@ Observations on the phone and build results are kept apart from plans.
   Full BOOT readback is byte-identical to the preserved CPU-only baseline
   (SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`).
-  TWRP remains connected. USERDATA and all other partitions were untouched.
-  No reboot has been issued after the restore; wait for fresh authorization.
+  After the user's approval, verified that BOOT hash and issued one reboot.
+  The user saw `SWEET: trust caches unavailable (Image4/AMFI not installed)`,
+  then reported the screen changed; the new display text is unknown. This is
+  an expected diagnostic path in patch 0015, not a panic by itself. A read-only
+  ADB/fastboot check found no connected device. USERDATA and all other
+  partitions were untouched; no further write or reboot was issued.
 - The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
   its previously working 17,031,184-byte image prefix hashes to
