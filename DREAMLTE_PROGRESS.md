@@ -25,9 +25,9 @@ Observations on the phone and build results are kept apart from plans.
   with `GXELTE KEYS: GPR2 con=0 dat=0x1 pud=0xd555 (read only)`. This resembles
   the legacy `A5XELTE KEYS: GPA2 ...` diagnostic in patch 0118. An older
   persistent log has that line followed by S8 touch, UFS/root mount, launchd,
-  and SpringBoard; that does not establish progress in this boot. The line's
-  duration and later boot stage are unknown. No second reboot or further
-  write was issued.
+  and SpringBoard; that does not establish progress in this boot. The user
+  reports the line was unchanged for about two minutes; the later boot stage
+  is unknown. No second reboot or further write was issued.
 - The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
   its previously working 17,031,184-byte image prefix hashes to
