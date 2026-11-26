@@ -40,12 +40,34 @@ Observations on the phone and build results are kept apart from plans.
   field differs in SWEETXNU, the DT is byte-identical to the baseline, and
   the embedded 1,980,912-byte overlay matches `stage3.ovl` exactly. The new
   stage-3 guard passed syntax validation and rejects the known-bad arguments.
-- This candidate is not boot-tested. Its XNU kernel and Metal overlay were
-  reused from the prior stage-3 build; no XNU rebuild or new successful
-  stage-3 plugin link occurred. Foreign/private Metal functions can still
-  have no Mali pipeline and skip draws. Confidence remains 25% for the full
-  goal (touch-enabled iOS plus a verified CoreAnimation GPU frame); no
-  flashing is authorized by this offline work.
+- Refreshed offline candidate
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-metal-final.img`:
+  19,144,720 bytes, SHA-256
+  `070530c1d2cdd6d1db25d094ae436f33849c399cbad0aa030c9938282e281558`.
+  Its 2,007,104-byte `stage3-final.ovl` hashes to
+  `a258a0164b5f4e31409c02a72d509a87099612ace98f8444261ce820a6371d28`.
+  The overlay contains the new 891,152-byte arm64 plugin
+  (SHA-256 `34d866fb7d91fb0145c10c80d264ac0a0f7eca1df35e15b36abebd9bfeb94c26`),
+  the complete 135-function QuartzCore cache (SHA-256
+  `a06b1678c0455380e1d56642d23b6ba1dfdc4b76b08c6a75b17d685a161206a4`),
+  and the iOS diagnostic helper. The plugin linked using a temporary copy of
+  the SDK libSystem stub; the installed SDK was not modified. It is not
+  runtime-tested.
+- The candidate uses the exact run-3 XNU kernel artifact
+  (`a45420f76f44bb10b7137e65ae931931767c5f1a3bbbfd0e6f017e343d976332`),
+  the preserved baseline BOOT header/DT, and the current loader. Validation
+  confirms the DT is byte-identical to baseline, all 10 kernel segments
+  match the prior stage-3 payload, and the embedded overlay plus ADT
+  `S8Overlay` mapping match the new archive. Arguments retain `cpus=4`,
+  `sweetfb_native=1`, `sweetfb_hz=30`, and touch enabled; they include
+  `s8gpupower=1 sweetfb_gpu=1 s8metal=1` and omit `s8gpu=` and `rootrw=1`.
+  The generated ADT step warned that local `d22ap.adt` was missing, so no
+  `/product` node was added.
+- No XNU rebuild, Actions run, flash, or reboot occurred. The candidate is
+  not boot-tested. Foreign/private Metal functions still lack a verified
+  Mali pipeline and can skip draws. Confidence remains 25% for the complete
+  goal (touch-enabled iOS plus a verified CoreAnimation GPU frame); this
+  offline candidate does not authorize device changes.
 
 ## User reporting threshold (2026-11-25 21:55 UTC)
 
