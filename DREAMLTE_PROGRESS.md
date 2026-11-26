@@ -21,9 +21,13 @@ Observations on the phone and build results are kept apart from plans.
   `b6b13d849c513a0dd047594c6ef265af3b6886c253c7972e552d2d8c86356ad8`.
   No other partition was written. The authorized single reboot was issued at
   11:23 UTC. Read-only ADB/fastboot checks from 11:23:53 through 11:28:40 UTC
-  found no connected device. The screen and boot stage remain unknown, so
-  this proves neither success nor failure. No second reboot or further write
-  was issued.
+  found no connected device. The user reports the XNU console currently ends
+  with `GXELTE KEYS: GPR2 con=0 dat=0x1 pud=0xd555 (read only)`. This resembles
+  the legacy `A5XELTE KEYS: GPA2 ...` diagnostic in patch 0118. An older
+  persistent log has that line followed by S8 touch, UFS/root mount, launchd,
+  and SpringBoard; that does not establish progress in this boot. The line's
+  duration and later boot stage are unknown. No second reboot or further
+  write was issued.
 - The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
   its previously working 17,031,184-byte image prefix hashes to
