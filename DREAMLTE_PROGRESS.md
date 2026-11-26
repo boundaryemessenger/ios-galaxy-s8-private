@@ -1233,3 +1233,25 @@ built in CI or booted yet.
 - Confidence remains 25% for complete boot + touch + verified GPU
   CoreAnimation, below the 50% pre-attempt threshold. No device action was
   taken. Source fix commit: `95143f8`; root handoff commit: `db58a0d`.
+
+## Touch startup isolation (2026-11-25 23:36 UTC)
+
+- The S8 touch setup was synchronous in `a5xelte_touch_probe()`, called from
+  `IOKitBSDInit`. I2C transfers may wait up to 20,000 one-millisecond loop
+  iterations, and touch enable can retry 20 times. A stalled controller could
+  therefore hold up this caller.
+- Moved the setup into a separate kernel initialization thread. It reports
+  that it started, retains the existing disabled/error diagnostics, starts
+  the existing poll worker on success, and terminates on setup completion or
+  failure. A stuck controller can still prevent touch from working, but it
+  should no longer block the IOKit initialization thread.
+- This is a defensive isolation change, not a confirmed root-cause fix. The
+  previous `s8touch=0` attempt reportedly stopped at the same approximate
+  `ifnet_attach` “Proceeding” line without showing `S8 TOUCH: disabled`, which
+  is inconclusive and weakens the touch-driver theory. No fresh log is
+  available.
+- The static patch parses, its embedded driver source matches
+  `tools/dreamlte/dreamlte_touch.c`, and `git diff --check` passes. No full
+  XNU worktree/toolchain is available to compile it. No device image was
+  built, flashed, or booted. Confidence remains 25%, below the 50% threshold
+  for another attempt; no device action was taken.

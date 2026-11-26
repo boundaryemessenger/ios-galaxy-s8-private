@@ -264,28 +264,31 @@ dreamlte_battery_read(unsigned *percent, unsigned *mv, int *ma,
 }
 
 static void
-dreamlte_touch_start(void)
+dreamlte_touch_init_thread(void *arg, wait_result_t result)
 {
 	uint8_t b[11] = {0};
 	thread_t thread;
 	int enabled = 1;
+	(void)arg;
+	(void)result;
+	printf("S8 TOUCH: init worker started\n");
 	(void)PE_parse_boot_argn("s8touch", &enabled, sizeof(enabled));
 	(void)PE_parse_boot_argn("sweetfb_native", &s8ts_native, sizeof(s8ts_native));
 	(void)PE_parse_boot_argn("sweetfb_scale", &s8ts_scale, sizeof(s8ts_scale));
 	if (!enabled) {
 		printf("S8 TOUCH: disabled\n");
-		return;
+		goto done;
 	}
 	s8ts_i2c = ml_io_map(S8TS_HSI2C_PA, 0x1000);
 	s8ts_alive = ml_io_map(S8TS_ALIVE_PA, 0x1000);
 	if (!s8ts_i2c || !s8ts_alive) {
 		printf("S8 TOUCH: MMIO mapping failed\n");
-		return;
+		goto done;
 	}
 	s8i2c_reset(s8ts_i2c);
 	if (!s8ts_cmd_read(0x55, b, 1) || b[0] != 0x20) {     /* BOOT_STATUS */
 		printf("S8 TOUCH: no S6SY761 in application mode (status %#x)\n", b[0]);
-		return;
+		goto done;
 	}
 	if (s8ts_cmd_read(0x52, b, 3)) {                       /* DEVICE_ID */
 		printf("S8 TOUCH: S6SY761 id %02x%02x%02x\n", b[0], b[1], b[2]);
@@ -311,7 +314,7 @@ dreamlte_touch_start(void)
 	if (!s) {
 		printf("S8 TOUCH: enable sequence failed (%s), int %#x trans %#x\n",
 		    f ? "SENSE_ON" : "TOUCH_FUNCTION", a5touch_read(s8ts_i2c, 0x24), a5touch_read(s8ts_i2c, 0x50));
-		return;
+		goto done;
 	}
 	printf("S8 TOUCH: enabled after %d retries\n", tries);
 	if (kernel_thread_start(s8ts_thread, NULL, &thread) == KERN_SUCCESS) {
@@ -319,6 +322,20 @@ dreamlte_touch_start(void)
 	} else {
 		printf("S8 TOUCH: thread start failed\n");
 	}
+done:
+	thread_terminate_self();
+}
+
+static void
+dreamlte_touch_start(void)
+{
+	thread_t thread;
+	/* IOKitBSDInit must not wait on a stalled touch-controller I2C bus. */
+	if (kernel_thread_start(dreamlte_touch_init_thread, NULL, &thread) == KERN_SUCCESS) {
+		thread_deallocate(thread);
+		printf("S8 TOUCH: init worker queued\n");
+	} else {
+		printf("S8 TOUCH: init worker start failed\n");
+	}
 }
 #endif /* DREAMLTE */
-
