@@ -7,6 +7,10 @@
 #pragma once
 #import "objc_min.h"
 
+typedef id dispatch_data_t;
+dispatch_data_t dispatch_data_create_map(dispatch_data_t data, const void **buffer_ptr, size_t *size_ptr);
+void dispatch_release(dispatch_data_t object);
+
 typedef struct { NSUInteger x, y, z; } MTLOrigin;
 typedef struct { NSUInteger width, height, depth; } MTLSize;
 typedef struct { MTLOrigin origin; MTLSize size; } MTLRegion;

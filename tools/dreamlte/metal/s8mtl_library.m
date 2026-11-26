@@ -49,6 +49,10 @@ static uint64_t s8_u64(const uint8_t *p) { uint64_t v; memcpy(&v, p, 8); return 
 static uint32_t s8_u32(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
 static uint16_t s8_u16(const uint8_t *p) { uint16_t v; memcpy(&v, p, 2); return v; }
 
+@interface S8Library ()
+- (BOOL)s8_parseBytes:(const uint8_t *)data length:(size_t)length;
+@end
+
 /* Function-constant values as "name=0xbits;..." in the order Metal keeps
  * them (MTLFunctionConstantValuesInternal -newNamedConstantArray, elements
  * MTLNamedConstantValue name/dataType/data). Values are the constant's
@@ -99,29 +103,89 @@ static void s8_constants_key(id values, char *out, size_t len)
 	_s8device = device;
 	size_t len = 0;
 	uint8_t *d = path ? s8_read_file(path, &len) : NULL;
-	if (d != NULL && len > 0x58 && s8_u32(d) == 0x424c544d /* "MTLB" */) {
-		uint64_t list = s8_u64(d + 0x18);
-		uint32_t count = list + 4 <= len ? s8_u32(d + list) : 0;
-		_funcs = calloc(count ? count : 1, sizeof(*_funcs));
-		uint64_t off = list + 4;
-		for (uint32_t i = 0; i < count && off + 4 <= len; i++) {
-			uint32_t flen = s8_u32(d + off);
-			uint64_t p = off + 4, end = off + flen;
-			while (p + 6 <= end && p + 6 <= len && s8_u32(d + p) != 0x54444e45 /* "ENDT" */) {
-				uint16_t sz = s8_u16(d + p + 4);
-				if (s8_u32(d + p) == 0x454d414e /* "NAME" */ && sz < sizeof(_funcs[0].name))
-					memcpy(_funcs[_nfuncs].name, d + p + 6, sz);
-				else if (s8_u32(d + p) == 0x45505954 /* "TYPE" */ && sz >= 1)
-					_funcs[_nfuncs].type = d[p + 6];
-				p += 6 + sz;
-			}
-			_nfuncs++;
-			off = end;
-		}
-	}
+	BOOL valid = d != NULL && [self s8_parseBytes:d length:len];
 	free(d);
+	if (!valid) {
+		[self release];
+		return nil;
+	}
 	s8_log("MTL library %s: %u functions", path ? path : "?", _nfuncs);
 	return self;
+}
+
+- (instancetype)initWithDevice:(id)device bytes:(const void *)bytes length:(size_t)length
+{
+	self = [super init];
+	if (self == nil)
+		return nil;
+	_s8device = device;
+	if (![self s8_parseBytes:bytes length:length]) {
+		[self release];
+		return nil;
+	}
+	s8_log("MTL library data: %u functions", _nfuncs);
+	return self;
+}
+
+- (BOOL)s8_parseBytes:(const uint8_t *)data length:(size_t)length
+{
+	if (data == NULL || length < 0x58 || s8_u32(data) != 0x424c544d /* "MTLB" */)
+		return NO;
+	uint64_t list = s8_u64(data + 0x18);
+	if (list > length || length - list < 4)
+		return NO;
+	uint32_t count = s8_u32(data + list);
+	if (count > 65536 || count > (length - list - 4) / 4)
+		return NO;
+	_funcs = calloc(count ? count : 1, sizeof(*_funcs));
+	if (_funcs == NULL)
+		return NO;
+
+	uint64_t off = list + 4;
+	for (uint32_t i = 0; i < count; i++) {
+		if (off > length || length - off < 4)
+			goto fail;
+		uint32_t flen = s8_u32(data + off);
+		if (flen < 4 || flen > length - off)
+			goto fail;
+		uint64_t p = off + 4, end = off + flen;
+		BOOL has_name = NO, has_type = NO;
+		while (p < end) {
+			if (end - p < 6)
+				goto fail;
+			uint32_t tag = s8_u32(data + p);
+			if (tag == 0x54444e45) /* "ENDT" */
+				break;
+			uint16_t size = s8_u16(data + p + 4);
+			p += 6;
+			if (size > end - p)
+				goto fail;
+			if (tag == 0x454d414e /* "NAME" */) {
+				if (size == 0 || size >= sizeof(_funcs[i].name))
+					goto fail;
+				memcpy(_funcs[i].name, data + p, size);
+				_funcs[i].name[size] = '\0';
+				has_name = YES;
+			} else if (tag == 0x45505954 /* "TYPE" */) {
+				if (size < 1)
+					goto fail;
+				_funcs[i].type = data[p];
+				has_type = YES;
+			}
+			p += size;
+		}
+		if (!has_name || !has_type)
+			goto fail;
+		_nfuncs++;
+		off = end;
+	}
+	return YES;
+
+fail:
+	free(_funcs);
+	_funcs = NULL;
+	_nfuncs = 0;
+	return NO;
 }
 
 - (void)dealloc

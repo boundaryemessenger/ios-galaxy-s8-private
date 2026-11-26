@@ -158,6 +158,7 @@ int s8_texture_ref(S8Texture *t, struct s8d_texture *out);
 	struct { char name[64]; uint8_t type; } *_funcs;      /* from the metallib */
 }
 - (instancetype)initWithDevice:(id)device path:(const char *)path;
+- (instancetype)initWithDevice:(id)device bytes:(const void *)bytes length:(size_t)length;
 @end
 
 @interface S8Function : _MTLObjectWithLabel <MTLFunctionSPI> {

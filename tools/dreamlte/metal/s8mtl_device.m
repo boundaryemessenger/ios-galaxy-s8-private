@@ -139,11 +139,37 @@ S8_FORWARDING
 
 /* ---- shaders and pipelines ---- */
 
+static id s8_error(const char *what);
+
 - (id)newLibraryWithURL:(id)url error:(id *)error
 {
 	if (error != NULL)
 		*error = nil;
-	return [[S8Library alloc] initWithDevice:self path:[[url path] UTF8String]];
+	S8Library *library = [[S8Library alloc] initWithDevice:self path:[[url path] UTF8String]];
+	if (library == nil && error != NULL)
+		*error = s8_error("S8MaliMetal: invalid or unreadable metallib");
+	return library;
+}
+
+- (id)newLibraryWithData:(dispatch_data_t)data error:(id *)error
+{
+	if (error != NULL)
+		*error = nil;
+	const void *bytes = NULL;
+	size_t length = 0;
+	dispatch_data_t mapped = dispatch_data_create_map(data, &bytes, &length);
+	if (mapped == nil || bytes == NULL) {
+		if (mapped != nil)
+			dispatch_release(mapped);
+		if (error != NULL)
+			*error = s8_error("S8MaliMetal: could not map metallib data");
+		return nil;
+	}
+	S8Library *library = [[S8Library alloc] initWithDevice:self bytes:bytes length:length];
+	dispatch_release(mapped);
+	if (library == nil && error != NULL)
+		*error = s8_error("S8MaliMetal: invalid metallib data");
+	return library;
 }
 
 static id s8_error(const char *what)
