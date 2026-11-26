@@ -19,9 +19,11 @@ Observations on the phone and build results are kept apart from plans.
   the partition suffix is unchanged from the backup; full BOOT SHA-256 after
   the write is
   `b6b13d849c513a0dd047594c6ef265af3b6886c253c7972e552d2d8c86356ad8`.
-  No other partition was written. The phone remains in TWRP and the
-  authorized single reboot is pending. Do not reboot or write again without
-  fresh authorization.
+  No other partition was written. The authorized single reboot was issued at
+  11:23 UTC. Read-only ADB/fastboot checks from 11:23:53 through 11:28:40 UTC
+  found no connected device. The screen and boot stage remain unknown, so
+  this proves neither success nor failure. No second reboot or further write
+  was issued.
 - The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
   its previously working 17,031,184-byte image prefix hashes to
