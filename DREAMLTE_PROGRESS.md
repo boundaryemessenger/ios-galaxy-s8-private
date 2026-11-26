@@ -31,7 +31,7 @@ Observations on the phone and build results are kept apart from plans.
   The host draw test reported 3 draws per pass, 0 skipped, and
   `4 submits, 0 failures`. The iOS draw-enabled plugin cross-build passed at
   891,632 bytes (SHA-256
-  `dfb1285ceadbe94c3d23eef00b09196f2d47f44cec8fe01e2340005ea612beb1`).
+  `2b3a8d020971b55e0abb7c3003aa933bef4c5d276330c9e7647640ca206f438f`).
 - No real foreign `MTLFunction` object, XNU crash trace, boot safety, or
   CoreAnimation GPU frame has been validated. G3D power/clock sequencing and
   firmware provenance remain unresolved. Do not package this build as a
