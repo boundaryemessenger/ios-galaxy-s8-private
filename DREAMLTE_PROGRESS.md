@@ -1254,4 +1254,5 @@ built in CI or booted yet.
   `tools/dreamlte/dreamlte_touch.c`, and `git diff --check` passes. No full
   XNU worktree/toolchain is available to compile it. No device image was
   built, flashed, or booted. Confidence remains 25%, below the 50% threshold
-  for another attempt; no device action was taken.
+  for another attempt; no device action was taken. Source commit: `cfeae4f`;
+  root handoff commit: `3f982b3`.
