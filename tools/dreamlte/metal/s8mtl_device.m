@@ -22,6 +22,25 @@
 size_t strlen(const char *);
 void *memset(void *, int, size_t);
 
+static BOOL s8_function_metadata(id function, const char **name, const char **constants)
+{
+	*name = NULL;
+	*constants = "";
+	if (function == nil)
+		return YES;
+	if (![function respondsToSelector:@selector(name)])
+		return NO;
+	id value = [function name];
+	if (value == nil || ![value respondsToSelector:@selector(UTF8String)])
+		return NO;
+	*name = [value UTF8String];
+	if (*name == NULL)
+		return NO;
+	if ([function isKindOfClass:[S8Function class]])
+		*constants = ((S8Function *)function)->_constants;
+	return YES;
+}
+
 @implementation S8MaliDevice
 
 - (instancetype)initWithAcceleratorPort:(unsigned int)port
@@ -210,42 +229,44 @@ static id s8_error(const char *what)
 	id vs_object = p->_vertex, fs_object = p->_fragment;
 	BOOL foreign = (vs_object != nil && ![vs_object isKindOfClass:[S8Function class]]) ||
 	    (fs_object != nil && ![fs_object isKindOfClass:[S8Function class]]);
-	if (foreign) {
-		static unsigned logged;
-		if (logged++ < 20)
-			s8_log("MTL pipeline %u: foreign functions %s %s / %s %s", p->_id,
-			    vs_object ? class_getName(object_getClass(vs_object)) : "-",
-			    vs_object ? [[vs_object name] UTF8String] : "",
-			    fs_object ? class_getName(object_getClass(fs_object)) : "-",
-			    fs_object ? [[fs_object name] UTF8String] : "");
-		if (s8d_init() != 0)
-			return p;
-		s8_log("MTL pipeline %u: foreign shader binary unavailable for Mali", p->_id);
+	const char *vs_name, *fs_name, *vs_constants, *fs_constants;
+	if (!s8_function_metadata(vs_object, &vs_name, &vs_constants) ||
+	    !s8_function_metadata(fs_object, &fs_name, &fs_constants)) {
 		if (error != NULL)
-			*error = s8_error("S8MaliMetal: foreign shader binary unavailable");
+			*error = s8_error("S8MaliMetal: render function has no usable name");
 		[p release];
 		return nil;
 	}
-	S8Function *vs = vs_object, *fs = fs_object;
+	if (foreign) {
+		static unsigned logged;
+		if (logged++ < 20)
+			s8_log("MTL pipeline %u: foreign functions %s %s / %s %s; cached-name lookup, constants unavailable", p->_id,
+			    vs_object ? class_getName(object_getClass(vs_object)) : "-",
+			    vs_name ? vs_name : "",
+			    fs_object ? class_getName(object_getClass(fs_object)) : "-",
+			    fs_name ? fs_name : "");
+	}
 	s8_log("MTL pipeline %u: vs %s fs %s fmt %lu blend %d", p->_id,
-	    vs ? [vs->_name UTF8String] : "-", fs ? [fs->_name UTF8String] : "-",
+	    vs_name ? vs_name : "-", fs_name ? fs_name : "-",
 	    (unsigned long)p->_colorFormat, p->_blending);
 	/* the full constant sets, in log-line-sized pieces */
+	id functions[2] = { vs_object, fs_object };
+	const char *function_constants[2] = { vs_constants, fs_constants };
 	for (int which = 0; which < 2; which++) {
-		S8Function *fn = which ? fs : vs;
-		if (fn == nil || !fn->_constants[0])
+		const char *constants = function_constants[which];
+		if (functions[which] == nil || constants[0] == '\0')
 			continue;
-		size_t len = strlen(fn->_constants);
+		size_t len = strlen(constants);
 		for (size_t o = 0; o < len; o += 96)
-			s8_log("MTL pipeline %u %s consts+%zu: %.96s", p->_id, which ? "fs" : "vs", o, fn->_constants + o);
+			s8_log("MTL pipeline %u %s consts+%zu: %.96s", p->_id, which ? "fs" : "vs", o, constants + o);
 	}
 	/* GPU pipeline (stage 3) */
 	struct s8d_pipeline_desc d;
 	memset(&d, 0, sizeof(d));
-	d.vs_name = vs ? [vs->_name UTF8String] : NULL;
-	d.fs_name = fs ? [fs->_name UTF8String] : NULL;
-	d.vs_constants = vs ? vs->_constants : "";
-	d.fs_constants = fs ? fs->_constants : "";
+	d.vs_name = vs_name;
+	d.fs_name = fs_name;
+	d.vs_constants = vs_constants;
+	d.fs_constants = fs_constants;
 	d.color_format = (uint32_t)p->_colorFormat;
 	d.blending = p->_blending;
 	d.write_mask = (uint8_t)[ca writeMask];

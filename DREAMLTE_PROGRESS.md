@@ -4,6 +4,39 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Cached foreign Metal function lookup and boot triage (2026-11-26)
+
+- This section supersedes the older device-state entries below: the user
+  rebooted the Metal candidate, reported a repeated console message resembling
+  `exec ACCMWComponentAuthService` / `SWEET AKS: ReportCrash ...`, and returned
+  the phone to TWRP. The exact XNU trace is unavailable, so the failing process
+  and boot stage are unconfirmed.
+- Read-only TWRP logs are outside git under
+  `%TEMP%/s8-boot-diag-20261126-2300/`. `/proc/last_kmsg` is the Samsung
+  S-Boot/TWRP recovery boot log, not the failed XNU session; pstore has no
+  `console-ramoops` trace. No USB serial console was detected. Current BOOT
+  still hashes to `5b68cd8b38d974781751dd9c824864a22c2d56ac7c4ec523f7679dc7659d6db6`,
+  the flashed candidate plus preserved pre-write tail. No additional device
+  write or reboot was performed.
+- `s8mtl_device.m` now accepts a foreign Metal function object if it exposes
+  `name`, then tries the precompiled QuartzCore cache by that name. Native
+  `S8Function` constants are retained; foreign constants are unavailable and
+  logged. This can only use cached names; it does not extract arbitrary AIR
+  or metallib data. A cache miss returns an error.
+- Native-host build of `air2nir` succeeded after an initial attempt against
+  the iOS cross-build incorrectly passed Apple target flags to `g++`. The
+  rebuilt QuartzCore cache contains 135/135 functions (1,047,844 bytes,
+  SHA-256
+  `7d858b889193c1ce2e05be1fe2c130af1ffc9c4b0c2e8fd36373c43c73e98977`).
+  The host draw test reported 3 draws per pass, 0 skipped, and
+  `4 submits, 0 failures`. The iOS draw-enabled plugin cross-build passed at
+  891,632 bytes (SHA-256
+  `dfb1285ceadbe94c3d23eef00b09196f2d47f44cec8fe01e2340005ea612beb1`).
+- No real foreign `MTLFunction` object, XNU crash trace, boot safety, or
+  CoreAnimation GPU frame has been validated. G3D power/clock sequencing and
+  firmware provenance remain unresolved. Do not package this build as a
+  validated boot image or write it to the phone.
+
 ## S8GPU descriptor follow-up (2026-11-26)
 
 - Tightened `0136-dreamlte-gpu-userclient.patch`: the Mali leaf descriptor now
