@@ -113,6 +113,19 @@ Observations on the phone and build results are kept apart from plans.
   kernel/image build, Actions run, phone operation, reboot, or write was
   performed for this research. The installed BOOT remains the CPU-only
   baseline; confidence for the complete goal remains 25%.
+- Build follow-up: Mesa 25.2.8 host builds of `mesa_clc`, `vtn_bindgen2`, and
+  native `panfrost_compile` succeeded. Static iOS GLES configuration with EGL
+  disabled succeeded. The first Panfrost/Gallium cross-compile failed because
+  `xf86drm.h` is absent, confirming there is no usable iOS libdrm/S8 winsys yet.
+- `ld64.lld-18` cannot parse the Xcode 27.2 SDK's `arm64e.x1-ios` TAPI target.
+  A temporary `-nostdlib`/`dynamic_lookup` workaround made Meson falsely detect
+  Linux-only `memfd_create`; compilation then stopped in `src/util/anon_file.c`.
+  This is not a valid build configuration and must not be used as evidence.
+- The EAGL/`st_api` adapter and IOSurface path remain unimplemented; no source
+  change, kernel/image build, Actions run, phone operation, or device write
+  occurred. Keep the CPU-only BOOT and do not enable the Panfrost and Metal
+  kernel interfaces together. Next: use a linker/SDK that accurately checks
+  iOS exports, establish the S8 winsys, then implement EAGL/IOSurface support.
 
 ## User reporting threshold (2026-11-25 21:55 UTC)
 
