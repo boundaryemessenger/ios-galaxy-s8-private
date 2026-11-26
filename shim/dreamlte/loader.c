@@ -456,7 +456,7 @@ uint64_t dl_main(uintptr_t dtb, uint64_t el, uint64_t sctlr)
 	battery_probe(kv, out);
 	display_probe(kv, out);
 	pmic_mngs_rail();
-	if (arg_at(ba, "s8gpu=1") >= 0) {
+	if (arg_at(ba, "s8gpupower=1") >= 0) {
 		pmic_g3d_rail();
 		gpu_probe(kv, out);
 	}

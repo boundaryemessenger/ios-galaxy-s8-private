@@ -159,7 +159,7 @@ s8gpu_init(void)
 	}
 	volatile uint32_t *pmu = (volatile uint32_t *)ml_io_map(S8GPU_PMU_G3D_STAT & ~0xfffUL, 0x1000);
 	if (pmu == NULL || (pmu[(S8GPU_PMU_G3D_STAT & 0xfff) / 4] & 0xf) != 0xf) {
-		IOLog("S8 GPU: pd-g3d is off (loader s8gpu=1 powers it); CPU present\n");
+		IOLog("S8 GPU: pd-g3d is off (loader s8gpupower=1 powers it); CPU present\n");
 		return;
 	}
 	s8gpu_regs = (volatile uint32_t *)ml_io_map(S8GPU_MALI_PA, 0x5000);

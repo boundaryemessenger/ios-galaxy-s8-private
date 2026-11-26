@@ -4,6 +4,49 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Metal path rebased on the known-good boot (2026-11-26)
+
+- Last device action was a BOOT-only write of the touch-disabled image
+  (`b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`) to
+  `/dev/block/sda7`, exact readback, and one reboot. ADB and fastboot were
+  absent at checks from 10:29:51 to 10:32:21 UTC. Current screen and boot
+  stage are unknown. No later device action was taken; do not write or reboot
+  without fresh authorization.
+- The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
+  `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
+  its previously working 17,031,184-byte image prefix hashes to
+  `bf6e4717514c821398168e58f8b796c9e8e810b71d40962a17b91558a696ed93`.
+- Corrected a boot-argument namespace collision: the loader previously used
+  `s8gpu=1` to enable its G3D rail/probe, while the separate XNU S8GPU path
+  also consumes `s8gpu` (modes >=2 power/reinitialize it). The loader now uses
+  `s8gpupower=1`; the Metal candidate omits `s8gpu` and uses only the
+  `sweetfb_gpu=1` framebuffer path plus `s8metal=1`. The loader's power/probe
+  remains a prerequisite because the Metal initializer checks that pd-g3d is
+  on.
+- Removed `rootrw=1` from the Metal candidate. Boot 45 stopped at the kernel
+  banner with root mounted read-write from the start, though the cause was
+  not proven. The known-working Boot 46 behavior keeps root read-only until
+  launchd remounts it writable, then the kernel thread installs the overlay.
+  `stage3-image.sh` now rejects both `rootrw=1` and `s8gpu=` to prevent these
+  misconfigurations.
+- Offline candidate
+  `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-metal-baseline.img`:
+  19,118,096 bytes, SHA-256
+  `b5836efab051c9fe588d1137d2ff4dd47677f14da7ea612ff1933bdbbe0b7c78`.
+  It uses the preserved BOOT baseline's header and DT; has
+  `s8gpupower=1 sweetfb_gpu=1 s8metal=1`, keeps touch enabled, and omits
+  both `rootrw=1` and `s8gpu=1`. The 68,352-byte loader cross-compiled in
+  WSL Ubuntu 24.04. Repack validation confirms only the 608-byte command-line
+  field differs in SWEETXNU, the DT is byte-identical to the baseline, and
+  the embedded 1,980,912-byte overlay matches `stage3.ovl` exactly. The new
+  stage-3 guard passed syntax validation and rejects the known-bad arguments.
+- This candidate is not boot-tested. Its XNU kernel and Metal overlay were
+  reused from the prior stage-3 build; no XNU rebuild or new successful
+  stage-3 plugin link occurred. Foreign/private Metal functions can still
+  have no Mali pipeline and skip draws. Confidence remains 25% for the full
+  goal (touch-enabled iOS plus a verified CoreAnimation GPU frame); no
+  flashing is authorized by this offline work.
+
 ## User reporting threshold (2026-11-25 21:55 UTC)
 
 - User asks to be notified once evidence supports at least 75% confidence that
@@ -904,15 +947,15 @@ built in CI or booted yet.
   The persistent XNU log did not change during the reported console attempt
   and cannot confirm the candidate boot. Latest 951-byte pmsg is garbled and
   has no reliable handoff marker.
-- Candidate-args issue: it has `sweetfb_gpu=1` and `s8metal=1`, but omits
-  `s8gpu=1`. Exact loader source only requests the G3D rail and runs the GPU
-  probe when `s8gpu=1` is present. Do not repeat this old image for an
-  acceleration test.
-- During this session, built a corrected candidate from the extracted, already
-  validated loader and SWEETXNU payload, adding only `s8gpu=1` to its
-  608-byte command-line field. It keeps `sweetfb_gpu=1`, `s8metal=1`, and
-  `s8autotwrp=90`. Loader and DT are byte-identical to the previous image;
-  the payload differs only in the command-line field. Candidate:
+- Historical candidate-args issue: it had `sweetfb_gpu=1` and `s8metal=1`,
+  but omitted `s8gpu=1`. At that point the loader reused `s8gpu=1` for the
+  G3D rail/probe; later review found that XNU also uses `s8gpu` for its
+  separate interface. The old conclusion and candidate are superseded by the
+  2026-11-26 rebasing handoff above.
+- The 2026-11-25 candidate temporarily added `s8gpu=1` to the 608-byte
+  command-line field while retaining `sweetfb_gpu=1`, `s8metal=1`, and
+  `s8autotwrp=90`. Loader and DT were byte-identical to the previous image;
+  payload differed only in command-line field. Candidate:
   `F:\ios-sweet-temp\stage3-overlay-27.2\s8-stage3-candidate-gpu-enabled.img`,
   19,118,096 bytes, SHA-256
   `56105bb3f5c2b96ef207e5ddbeed9ff1dd0add454773b64e74658443f0e7608c`.

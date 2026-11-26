@@ -11,6 +11,18 @@
 set -euo pipefail
 work=$(realpath "$1"); kernel=$(realpath "$2"); stock=$(realpath "$3"); out=$(realpath -m "$4")
 shift 4
+for arg in "$@"; do
+	case "$arg" in
+		rootrw=1)
+			echo "error: omit rootrw=1; the stage-3 overlay waits for launchd to remount root writable" >&2
+			exit 1
+			;;
+		s8gpu=*)
+			echo "error: omit s8gpu for the Metal path; use s8gpupower=1 for the loader probe" >&2
+			exit 1
+			;;
+	esac
+done
 sdk=${S8_IOS_SDK:-$work/sdk/iPhoneOS16.5.sdk}
 [[ -d $sdk ]] || { echo "iOS SDK not found: $sdk" >&2; exit 1; }
 sdk=$(realpath "$sdk")

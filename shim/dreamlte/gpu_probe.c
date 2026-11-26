@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only
  * Galaxy S8 Mali-G71 bring-up probe, run by the loader (MMU off), boot-arg
- * s8gpu=1. Step 1 of a GPU for iOS: power the GPU and read its ID.
+ * s8gpupower=1. Step 1 of a GPU for iOS: power the GPU and read its ID.
  *
  * Sources (Samsung universal8895 kernel): exynos8895.dtsi mali@13900000
  * (pd_g3d), exynos8895-pm-domains.dtsi pd-g3d@164840e0, cal-if/exynos8895
