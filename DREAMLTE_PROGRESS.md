@@ -90,6 +90,30 @@ Observations on the phone and build results are kept apart from plans.
   goal (touch-enabled iOS plus a verified CoreAnimation GPU frame); this
   offline candidate does not authorize device changes.
 
+## OpenGL-first direction (2026-11-26)
+
+- User prefers OpenGL/GLES as the first acceleration milestone and considers
+  Metal a stretch goal. The shared video reports a Pixel 4a with partial
+  acceleration after an earlier GPU attempt froze; it does not demonstrate
+  full Metal support or validate the S8.
+- Inspected public `frokfrdk/ios-sweet` `sunfish` at
+  `889149803008aab9166747eaf84ea39e62c57ee6`. Its experimental path selects
+  CoreAnimation's EAGL/GLES renderer and routes it through Mesa freedreno for
+  Adreno 618. EAGL notes document an API-3 context, a 1036-slot dispatch table,
+  and IOSurface-backed textures. Its Adreno GMU/power and freedreno backend
+  are not directly usable on the S8's Mali-G71.
+- S8 already has the separate `S8GPU` user client for a subset of Panfrost DRM
+  requests (`0136`) and a cross-compiled Mesa Panfrost archive used by the
+  current Metal plugin's descriptor code. There is not yet a full Panfrost
+  Gallium GLES renderer or EAGL shim; the existing Metal draw path remains
+  unverified for full CoreAnimation content. Do not enable the Panfrost and
+  Metal kernel interfaces together; both manage/reset the Mali.
+- Next offline milestone: assess a full Mesa Panfrost GLES path over the
+  existing S8 interface, then implement and test the EAGL boundary. No
+  kernel/image build, Actions run, phone operation, reboot, or write was
+  performed for this research. The installed BOOT remains the CPU-only
+  baseline; confidence for the complete goal remains 25%.
+
 ## User reporting threshold (2026-11-25 21:55 UTC)
 
 - User asks to be notified once evidence supports at least 75% confidence that
