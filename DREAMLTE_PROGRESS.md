@@ -4,6 +4,21 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## S8GPU descriptor follow-up (2026-11-26)
+
+- Tightened `0136-dreamlte-gpu-userclient.patch`: the Mali leaf descriptor now
+  explicitly sets memory attribute index 2, read/write AP, inner-shareable
+  sharing, and the access flag, while table entries retain low bits `11`.
+  Buffer allocation now rejects zero or out-of-range sizes before 4 KiB
+  rounding and checks rounded size plus VA bounds before allocation.
+- Added `tools/dreamlte/tests/S8GPUDescriptorTest.cpp`; it passed under
+  `g++ -std=c++11 -Wall -Wextra -Werror` for table/leaf descriptor bits and
+  allocation boundary calculations.
+- The patch could not be checked against this worktree because its referenced
+  XNU `iokit/` files are absent here. No kernel build, GPU MMIO, flash, reboot,
+  or partition write occurred. This remains software validation, not proof of
+  Mali hardware acceleration.
+
 ## Metal path rebased on the known-good boot (2026-11-26)
 
 - Metal candidate test: after explicit user authorization, wrote the
