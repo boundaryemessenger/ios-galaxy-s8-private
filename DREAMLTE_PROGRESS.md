@@ -6,12 +6,22 @@ Observations on the phone and build results are kept apart from plans.
 
 ## Metal path rebased on the known-good boot (2026-11-26)
 
-- Last device action was a BOOT-only write of the touch-disabled image
-  (`b47ce02749d82fd8f43567243933ea9a96f2400b34769fcb405dea52e6742b2d`) to
-  `/dev/block/sda7`, exact readback, and one reboot. ADB and fastboot were
-  absent at checks from 10:29:51 to 10:32:21 UTC. Current screen and boot
-  stage are unknown. No later device action was taken; do not write or reboot
-  without fresh authorization.
+- Latest device action: with the user's explicit authorization to test despite
+  the 25% confidence estimate, the candidate was written only to BOOT
+  `/dev/block/sda7` and synced. TWRP confirmed the BOOT symlink and 40 MiB
+  partition. Fresh pre-write backup
+  `F:\iOS Galaxy\backup\G950F-BOOT-pre-metal-final-20261126-1121.img`
+  (SHA-256
+  `f12a8f410e00bc870cf82719e64923d1b80676eaeac6a8880e58339073320c7e`).
+  Full readback confirms the first 19,144,720 bytes match the candidate
+  exactly (SHA-256
+  `070530c1d2cdd6d1db25d094ae436f33849c399cbad0aa030c9938282e281558`) and
+  the partition suffix is unchanged from the backup; full BOOT SHA-256 after
+  the write is
+  `b6b13d849c513a0dd047594c6ef265af3b6886c253c7972e552d2d8c86356ad8`.
+  No other partition was written. The phone remains in TWRP and the
+  authorized single reboot is pending. Do not reboot or write again without
+  fresh authorization.
 - The preserved CPU-rendered baseline is the 40 MiB BOOT backup with SHA-256
   `08a756484b2b728fc0148c5e7e4defd99322edea7de1931e36a02206a2d6f71e`;
   its previously working 17,031,184-byte image prefix hashes to
