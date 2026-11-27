@@ -11,26 +11,36 @@ Observations on the phone and build results are kept apart from plans.
   that is directly verified. The user also asked for no routine progress
   chatter before that point. A 100% guarantee cannot be established offline;
   it requires a device boot and direct screen confirmation.
-- The current verified BOOT remains the unboot-tested AS0 diagnostic image at
-  SHA-256
-  `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`;
-  the handset is in TWRP. No further write or reboot is authorized.
-- Prepared, but did not write, a CPU-rendered recovery candidate from the
-  previously user-tested baseline:
+- The user authorized one BOOT-only CPU-baseline restore and one reboot test.
+  The phone is still in TWRP (`dreamlte`). Before the write, the full BOOT
+  readback matched the AS0 image at SHA-256
+  `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`.
+  That exact 40 MiB pre-write readback is preserved at
+  `F:\ios-sweet-temp\s8-home-baseline-20261127\prewrite-live-BOOT-readback-40MiB.img`.
+- Wrote only the sector-aligned 17,035,264-byte CPU baseline extent below
+  through the named BOOT symlink `/dev/block/platform/11120000.ufs/by-name/BOOT`
+  -> `/dev/block/sda7`; `dd` completed 4,159 4096-byte blocks and `sync`
+  succeeded. No other partition was written. Full 40 MiB post-write readback
+  at
+  `F:\ios-sweet-temp\s8-home-baseline-20261127\postwrite-live-BOOT-readback-40MiB.img`
+  has SHA-256
+  `7e7aa61a4c9b95d58b7922460d1e7846d5119cec4fab63af361449668d19633f`.
+  It is byte-identical to the expected full BOOT reconstructed from the
+  exact pre-write readback plus the written extent, at
+  `F:\ios-sweet-temp\s8-home-baseline-20261127\s8-cpus4-fb15-baseline-expected-full-BOOT-preserve-current-tail.img`.
+  The initial expected image made before the write used the older saved tail
+  and mismatched starting exactly at the write-extent boundary; the corrected
+  expectation preserves the actual pre-write tail.
+- The written extent is the previously user-tested CPU-rendered baseline:
   `F:\ios-sweet-temp\s8-home-baseline-20261127\s8-cpus4-fb15-baseline-write-extent.bin`
   (17,035,264 bytes, SHA-256
   `6c3cf756ac10118a0f524d005ab88f7eb1e7c249824725b8e86bb9c8ec64e6c4`).
   It contains the 17,031,184-byte verified baseline prefix
   `bf6e4717514c821398168e58f8b796c9e8e810b71d40962a17b91558a696ed93`
-  plus 4,080 bytes from the fresh current BOOT backup. The expected full
-  partition image, preserving every later BOOT byte, is
-  `F:\ios-sweet-temp\s8-home-baseline-20261127\s8-cpus4-fb15-baseline-expected-full-BOOT.img`
-  (41,943,040 bytes, SHA-256
-  `5f6ca49ce651cf132fc5191a24e2ab24324b09e3859b5cd8d7bb72120244f848`).
-  This baseline disables GPU/Metal boot arguments and has reached the lock
-  screen/Home Screen in earlier user-confirmed boots; a later restoration
-  only had an Apple-logo report, so its next boot is not guaranteed. Do not
-  write or reboot without fresh explicit authorization.
+  plus 4,080 bytes to complete the sector boundary. It disables GPU/Metal boot
+  arguments and reached lock/home in earlier user-confirmed boots; a later
+  restoration only had an Apple-logo report, so success is not guaranteed.
+  The separately authorized reboot has not yet been issued.
 
 - Commit `e0f032c` adds a slot-1 `WRITE_VALUE` self-test after AS0 is
   configured in the active AArch64 4K mode. It maps one dedicated page after
