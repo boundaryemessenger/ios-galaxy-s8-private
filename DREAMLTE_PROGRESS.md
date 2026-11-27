@@ -38,6 +38,7 @@ Observations on the phone and build results are kept apart from plans.
   Structural validation confirms 11 SWEETXNU segments, exact prior boot
   arguments, loader and DT matching their inputs, and embedded overlay bytes
   and ADT mapping matching. This has not been flashed or boot-tested.
+- Parser source committed locally as `c34d807` (not pushed).
 - Device is in TWRP; BOOT remains the previously flashed image at SHA-256
   `818505107a56bcd7c74a5b50c371ee04839a044649bd82e921847b6c72e688c9`.
   No partition changes or reboot occurred during diagnosis/build. Obtain
