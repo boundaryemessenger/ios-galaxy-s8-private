@@ -16,6 +16,7 @@
 
 #include "s8mtl_core.h"
 #include "s8mtl_draw.h"
+#include "s8mtl_metallib.h"
 
 /* Bytes per pixel of a MTLPixelFormat (0 = unknown/compressed). */
 unsigned s8_format_bpp(NSUInteger format);
@@ -155,7 +156,7 @@ int s8_texture_ref(S8Texture *t, struct s8d_texture *out);
 @interface S8Library : _MTLObjectWithLabel <MTLLibrarySPI> {
 	id _s8device;
 	unsigned _nfuncs;
-	struct { char name[64]; uint8_t type; } *_funcs;      /* from the metallib */
+	struct s8_mtl_function *_funcs;
 }
 - (instancetype)initWithDevice:(id)device path:(const char *)path;
 - (instancetype)initWithDevice:(id)device bytes:(const void *)bytes length:(size_t)length;

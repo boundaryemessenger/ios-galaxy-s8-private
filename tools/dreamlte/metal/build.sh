@@ -19,6 +19,10 @@ for src in "$here"/s8mtl_*.m; do
 		-fno-objc-exceptions -fblocks -nostdlibinc -isystem "$here/../ios/stub" -c "$src" -o "$o"
 	objs+=("$o")
 done
+o=$out/obj/s8mtl_metallib.o
+"$clang" -target arm64-apple-ios16.0 -O2 -Wall -Wextra -Werror -fno-stack-protector \
+	-nostdlibinc -isystem "$("$clang" -print-resource-dir)/include" -c "$here/s8mtl_metallib.c" -o "$o"
+objs+=("$o")
 libs=("$here/../ios/libSystem.tbd")
 if [[ -n ${S8_MESA_LIB:-} ]]; then
 	sdk=$(realpath "${S8_IOS_SDK:?S8_IOS_SDK must name an iPhoneOS SDK}")

@@ -14,9 +14,7 @@ int close(int);
 long read(int, void *, unsigned long);
 long long lseek(int, long long, int);
 void *malloc(size_t);
-void *calloc(size_t, size_t);
 void free(void *);
-void *memcpy(void *, const void *, size_t);
 int strcmp(const char *, const char *);
 size_t strlen(const char *);
 int snprintf(char *, size_t, const char *, ...);
@@ -44,10 +42,6 @@ static uint8_t *s8_read_file(const char *path, size_t *len)
 	*len = got;
 	return b;
 }
-
-static uint64_t s8_u64(const uint8_t *p) { uint64_t v; memcpy(&v, p, 8); return v; }
-static uint32_t s8_u32(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
-static uint16_t s8_u16(const uint8_t *p) { uint16_t v; memcpy(&v, p, 2); return v; }
 
 @interface S8Library ()
 - (BOOL)s8_parseBytes:(const uint8_t *)data length:(size_t)length;
@@ -106,6 +100,10 @@ static void s8_constants_key(id values, char *out, size_t len)
 	BOOL valid = d != NULL && [self s8_parseBytes:d length:len];
 	free(d);
 	if (!valid) {
+		static unsigned rejected;
+		if (rejected++ < 8)
+			s8_log("MTL library rejected %s (%lu bytes)", path ? path : "?",
+			    (unsigned long)len);
 		[self release];
 		return nil;
 	}
@@ -129,63 +127,7 @@ static void s8_constants_key(id values, char *out, size_t len)
 
 - (BOOL)s8_parseBytes:(const uint8_t *)data length:(size_t)length
 {
-	if (data == NULL || length < 0x58 || s8_u32(data) != 0x424c544d /* "MTLB" */)
-		return NO;
-	uint64_t list = s8_u64(data + 0x18);
-	if (list > length || length - list < 4)
-		return NO;
-	uint32_t count = s8_u32(data + list);
-	if (count > 65536 || count > (length - list - 4) / 4)
-		return NO;
-	_funcs = calloc(count ? count : 1, sizeof(*_funcs));
-	if (_funcs == NULL)
-		return NO;
-
-	uint64_t off = list + 4;
-	for (uint32_t i = 0; i < count; i++) {
-		if (off > length || length - off < 4)
-			goto fail;
-		uint32_t flen = s8_u32(data + off);
-		if (flen < 4 || flen > length - off)
-			goto fail;
-		uint64_t p = off + 4, end = off + flen;
-		BOOL has_name = NO, has_type = NO;
-		while (p < end) {
-			if (end - p < 6)
-				goto fail;
-			uint32_t tag = s8_u32(data + p);
-			if (tag == 0x54444e45) /* "ENDT" */
-				break;
-			uint16_t size = s8_u16(data + p + 4);
-			p += 6;
-			if (size > end - p)
-				goto fail;
-			if (tag == 0x454d414e /* "NAME" */) {
-				if (size == 0 || size >= sizeof(_funcs[i].name))
-					goto fail;
-				memcpy(_funcs[i].name, data + p, size);
-				_funcs[i].name[size] = '\0';
-				has_name = YES;
-			} else if (tag == 0x45505954 /* "TYPE" */) {
-				if (size < 1)
-					goto fail;
-				_funcs[i].type = data[p];
-				has_type = YES;
-			}
-			p += size;
-		}
-		if (!has_name || !has_type)
-			goto fail;
-		_nfuncs++;
-		off = end;
-	}
-	return YES;
-
-fail:
-	free(_funcs);
-	_funcs = NULL;
-	_nfuncs = 0;
-	return NO;
+	return s8_mtl_parse(data, length, &_funcs, &_nfuncs) ? YES : NO;
 }
 
 - (void)dealloc

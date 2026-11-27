@@ -4,6 +4,46 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## ReportCrash triage and metallib parser fix (2026-11-27)
+
+- This supersedes the earlier note that the XNU trace was unavailable. The
+  read-only SWEETLOG ring is outside git at
+  `%TEMP%/s8-post-metal-crash-20261127-1607/sweetlog.txt` (150,654 bytes,
+  flush #10). It contains nine `backboardd` SIGABRT records with
+  `Metal failed to load library`; `STR` strings include the plugin's
+  `S8MaliMetal: invalid or unreadable metallib` error. The 54
+  `SWEET AKS: ReportCrash` calls are crash-report processing, not the cause.
+  Recovery `last_kmsg` is not the XNU trace; pmsg remains binary/garbled.
+- The old library parser accepted only a thin `MTLB` file, rejected names of
+  64 bytes or longer, and required six bytes before checking the four-byte
+  `ENDT` tag. The available CoreImage metallib is a FAT universal container
+  with two embedded MTLB slices and function names as long as 150 bytes. Its
+  format matches the reported library rejection; the old runtime did not log
+  the requested URL, so that exact file-to-call association is not confirmed.
+- Added a bounds-checked parser for thin and universal metallibs. It merges
+  function metadata from embedded slices, skips names too long for the
+  existing 64-byte shader-cache key, and recognizes `ENDT` correctly. URL
+  parse failures now log the path and size (bounded to eight lines).
+- Native parser regression tests pass for thin and FAT inputs, including the
+  long-name case; the available CoreImage metallib parses with 175 usable
+  function names. The draw-enabled iOS plugin and overlay build passed:
+  plugin 891,760 bytes (SHA-256
+  `455891a34a781cbb99d3ba7d592e9b33f3d49f9b706215da28dbec1dbad11795`),
+  overlay 2,007,760 bytes (SHA-256
+  `6e111dd0254bf5f50f2b3d80bdc154240a35da6d4451615cad592044a5af769c`).
+- Packaged candidate
+  `F:\ios-sweet-temp\stage3-metal-fatlib-fix-20261127\s8-stage3-metal-fatlib-fix.img`:
+  19,144,720 bytes, SHA-256
+  `ca03739f705098ab7f95910c26e084377038cc0fe66577350a05288d47cb4362`.
+  Structural validation confirms 11 SWEETXNU segments, exact prior boot
+  arguments, loader and DT matching their inputs, and embedded overlay bytes
+  and ADT mapping matching. This has not been flashed or boot-tested.
+- Device is in TWRP; BOOT remains the previously flashed image at SHA-256
+  `818505107a56bcd7c74a5b50c371ee04839a044649bd82e921847b6c72e688c9`.
+  No partition changes or reboot occurred during diagnosis/build. Obtain
+  explicit authorization before flashing; do not reboot without separate
+  authorization. Metal operation remains unverified.
+
 ## Cached foreign Metal function lookup and boot triage (2026-11-26)
 
 - This section supersedes the older device-state entries below: the user
