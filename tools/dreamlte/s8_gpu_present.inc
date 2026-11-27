@@ -14,11 +14,12 @@
  * path; three errors switch the GPU path off.
  *
  * Boot 41: 17 MiB physically contiguous IOSurfaces could not be allocated,
- * so the GPU has its own page tables (kbase AArch64 4K format, levels 0-3:
- * table = PA | AF | 3, page = PA | attr 0 << 2 | RW | AF | 3; AS_TRANSCFG
- * mode 6). The blob and the panel are mapped GPU VA = PA; each iOS frame
- * surface gets a 32 MiB window at S8GPU_SLOT_VA mapping its scattered pages,
- * rebuilt only when a slot is reused for another surface.
+ * so the GPU has its own page tables (AArch64 4K format, levels 0-3:
+ * table = PA | 3, page = PA | RW | AF | 3). AS_TRANSCFG selects 48-bit
+ * input addresses, write-back page-table walks, and read-ahead. The blob
+ * and panel are mapped GPU VA = PA; each iOS frame surface gets a 32 MiB
+ * window at S8GPU_SLOT_VA mapping its scattered pages, rebuilt only when a
+ * slot is reused for another surface.
  */
 extern "C" void clean_dcache(vm_offset_t addr, unsigned count, int phys);
 extern "C" void flush_dcache(vm_offset_t addr, unsigned count, int phys);
@@ -115,10 +116,10 @@ s8gpu_pte(uint64_t va)
 				return NULL;
 			}
 			unsigned t = s8gpu_pt_used++;
-			*e = (S8GPU_PT_PA + (uint64_t)t * 4096) | (1ULL << 10) | 3;
+			*e = s8gpu_mmu_table_descriptor(S8GPU_PT_PA + (uint64_t)t * 4096);
 			table = t;
 		} else {
-			table = (unsigned)(((*e & 0xfffffffff000ULL) - S8GPU_PT_PA) / 4096);
+			table = (unsigned)(((*e & S8GPU_MMU_PTE_ADDR_MASK) - S8GPU_PT_PA) / 4096);
 		}
 	}
 	return &s8gpu_pt[table * 512 + ((va >> 12) & 511)];
@@ -132,7 +133,7 @@ s8gpu_map(uint64_t va, uint64_t pa, uint64_t len)
 		if (e == NULL) {
 			return false;
 		}
-		*e = ((pa + o) & 0xfffffffff000ULL) | (1ULL << 6) | (1ULL << 10) | 3;
+		*e = s8gpu_mmu_page_descriptor(pa + o);
 	}
 	return true;
 }
@@ -165,6 +166,14 @@ s8gpu_init(void)
 	s8gpu_regs = (volatile uint32_t *)ml_io_map(S8GPU_MALI_PA, 0x5000);
 	if (s8gpu_regs == NULL || (s8gpu_rd(0x000) >> 16) != 0x60a0) {
 		IOLog("S8 GPU: no Mali-G71 (GPU_ID 0x%x)\n", s8gpu_regs ? s8gpu_rd(0x000) : 0);
+		return;
+	}
+	uint32_t mmu_features = s8gpu_rd(0x014);
+	uint32_t va_bits = S8GPU_MMU_FEATURES_VA_BITS(mmu_features);
+	uint32_t pa_bits = S8GPU_MMU_FEATURES_PA_BITS(mmu_features);
+	if (!s8gpu_mmu_geometry_supported(mmu_features)) {
+		IOLog("S8 GPU: unsupported MMU geometry 0x%x (VA=%u PA=%u); CPU present\n",
+		    mmu_features, va_bits, pa_bits);
 		return;
 	}
 	s8gpu_lock = IOLockAlloc();
@@ -200,7 +209,7 @@ s8gpu_init(void)
 	s8gpu_wr(S8GPU_AS0 + 0x04, (uint32_t)(S8GPU_PT_PA >> 32));
 	s8gpu_wr(S8GPU_AS0 + 0x08, 0x88888888u);        /* AS_MEMATTR: all impl. defined */
 	s8gpu_wr(S8GPU_AS0 + 0x0c, 0x88888888u);
-	s8gpu_wr(S8GPU_AS0 + 0x30, 6);                  /* AS_TRANSCFG: AARCH64_4K */
+	s8gpu_wr(S8GPU_AS0 + 0x30, s8gpu_mmu_transcfg(va_bits));
 	s8gpu_wr(S8GPU_AS0 + 0x34, 0);
 	s8gpu_wr(S8GPU_AS0 + 0x18, 1);                  /* AS_COMMAND_UPDATE */
 	bool as_on = mapped && s8gpu_wait(S8GPU_AS0 + 0x28, 1, 0, 100000);

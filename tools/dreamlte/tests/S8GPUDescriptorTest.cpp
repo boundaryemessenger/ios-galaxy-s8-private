@@ -1,28 +1,34 @@
 #include <cassert>
 #include <cstdint>
 
-#define PTE_TABLE               3ULL
-#define PTE_ATTR_INDEX_SHIFT    2
-#define PTE_AP_RW_SHIFT         6
-#define PTE_SH_SHIFT            8
-#define PTE_AF                  (1ULL << 10)
-#define PTE_LEAF_RW             (1ULL | (2ULL << PTE_ATTR_INDEX_SHIFT) | \
-                                (3ULL << PTE_AP_RW_SHIFT) | (2ULL << PTE_SH_SHIFT) | PTE_AF)
-#define PTE_ADDR_MASK           0x0000fffffffff000ULL
+#include "../s8_mali_mmu.h"
 
 static bool
 descriptorTest(void)
 {
-	uint64_t table = 0x12345000ULL | PTE_TABLE;
-	uint64_t leaf = 0x12346000ULL | PTE_LEAF_RW;
+	uint64_t table = s8gpu_mmu_table_descriptor(0x12345000ULL);
+	uint64_t page = s8gpu_mmu_page_descriptor(0x12346000ULL);
 
 	assert((table & 3ULL) == 3ULL);
-	assert((leaf & 3ULL) == 1ULL);
-	assert((leaf & PTE_ADDR_MASK) == 0x12346000ULL);
-	assert(((leaf >> PTE_ATTR_INDEX_SHIFT) & 7ULL) == 2ULL);
-	assert(((leaf >> PTE_AP_RW_SHIFT) & 3ULL) == 3ULL);
-	assert(((leaf >> PTE_SH_SHIFT) & 3ULL) == 2ULL);
-	assert((leaf & PTE_AF) != 0ULL);
+	assert((table & S8GPU_MMU_PTE_AF) == 0ULL);
+	assert((page & 3ULL) == 3ULL);
+	assert((page & S8GPU_MMU_PTE_ADDR_MASK) == 0x12346000ULL);
+	assert(((page >> 6) & 3ULL) == 1ULL);
+	assert((page & S8GPU_MMU_PTE_AF) != 0ULL);
+	return true;
+}
+
+static bool
+mmuConfigTest(void)
+{
+	const uint32_t features = 0x2830u;
+	const uint32_t expected = (2u << 24) | (1u << 30) | (7u << 6) | 6u;
+
+	assert(s8gpu_mmu_geometry_supported(features));
+	assert(S8GPU_MMU_FEATURES_VA_BITS(features) == 48u);
+	assert(S8GPU_MMU_FEATURES_PA_BITS(features) == 40u);
+	assert(s8gpu_mmu_transcfg(48u) == expected);
+	assert(!s8gpu_mmu_geometry_supported(0x2730u));
 	return true;
 }
 
@@ -44,6 +50,7 @@ int
 main(void)
 {
 	assert(descriptorTest());
+	assert(mmuConfigTest());
 	assert(allocBoundsTest());
 	return 0;
 }
