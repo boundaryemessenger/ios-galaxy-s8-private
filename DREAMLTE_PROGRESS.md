@@ -92,10 +92,32 @@ Observations on the phone and build results are kept apart from plans.
   fix.
 - Source commit `2d75541` was pushed. XNU Actions run
   [46055036133](https://github.com/boundaryemessenger/ios-galaxy-s8-private/actions/runs/46055036133)
-  is running with `A5XELTE` / `DEVELOPMENT`; its build result is pending.
-- Next: record the build result, then request separate authorization before
-  any further BOOT write or reboot. Do not claim acceleration is fixed until
-  GPU jobs complete and a GPU-presented frame is confirmed.
+  succeeded for `A5XELTE` / `DEVELOPMENT`. The artifact is 17,190,720 bytes,
+  SHA-256 `44324e044cd9074226bcd3fb488e4ab6ac051b41dd1ebfe40d3af34d712459de`.
+  The LSE scan reports one `<K256>` instruction; this inherited warning is
+  unresolved.
+- Built an offline candidate at
+  `F:\ios-sweet-temp\s8-dsb-ordering-20261127\candidate\s8-stage3-dsb-ordering.img`:
+  19,144,720 bytes, SHA-256
+  `292326090bd87a0c6406d4c9564af00fc870fae70391c5ac54cdf65ea1347723`.
+  Its 18,602,944-byte payload SHA-256 is
+  `8484671764ac31984b8cadc974c116fd21356372fd4da323bb540086af70dcfd`.
+  Structural validation confirms all 10 kernel segments byte-match the CI
+  artifact, all 11 payload segments are present, boot arguments and overlay
+  bytes match the prior candidate, and ADT `S8Overlay` maps to
+  `0x8828dc000 + 0x1ea2d0`. The extracted loader matches the prior candidate
+  and DT matches the preserved baseline.
+- Prepared an offline 41,943,040-byte expected BOOT image by replacing the
+  candidate prefix and preserving the previously read-back-verified BOOT
+  tail: SHA-256
+  `5b080e7221144e34cac0a36ee4cd22e00bb110320b2cc0bd6894ffde28855683`.
+  Its sector-aligned write extent is 19,148,800 bytes (candidate plus 4,080
+  preserved bytes), SHA-256
+  `a30ae4d86f9dba505a628c2e1ee1d5a0d94921e94e15d94d11f65c64a100f560`.
+  No BOOT write or reboot was performed; the device was not rechecked during
+  packaging (last reported in TWRP). Request separate authorization before
+  any device write or reboot. Do not claim acceleration is fixed until GPU
+  jobs complete and a GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
