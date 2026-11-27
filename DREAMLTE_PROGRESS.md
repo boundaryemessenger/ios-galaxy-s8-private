@@ -4,6 +4,34 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Post-fix boot diagnostics (2026-11-27)
+
+- The user returned the handset to TWRP. Read-only ADB confirms
+  `recovery product:omni_dreamlte model:Galaxy_S8`, `dreamlte`, and BOOT
+  `/dev/block/sda7`. Its full SHA-256 remains
+  `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`,
+  matching the verified parser-fix candidate and preserved tail. No further
+  partition write or reboot was issued.
+- Captured the previous iOS boot's 4 MiB USERDATA SWEETLOG ring and recovery
+  traces read-only to `%TEMP%\s8-post-metal-crash-20261127-162837\`, outside
+  git. SWEETLOG reports 175,215 bytes, flush #13; decoded text is 177,798
+  bytes. `last_kmsg` is the TWRP boot log, not the failed iOS kernel session.
+- The parser fix is active: the log shows `S8MaliMetal` published and loaded,
+  QuartzCore shader-cache files present, Metal pipelines created, and no
+  `Metal failed to load library`, `invalid or unreadable metallib`, or
+  `backboardd` crash. SpringBoard and backboardd launch and remain active.
+  One `driverkitd` SIGKILL and a ReportCrash launch appear, not the previous
+  repeated backboardd/Metal failure.
+- The unresolved blocker is GPU job completion. User submissions time out
+  with result 2; both they and the framebuffer presenter report JS status
+  `0x8`, IRQ `0x0`, and no AS fault. After three presenter timeouts the kernel
+  switches to CPU presentation. The ring records one shown swap in 10 seconds
+  and an 803,875 us CPU copy, consistent with the reported black display but
+  not proof of its exact visible state. Metal rendering is not working yet.
+- Next: investigate why XNU GPU jobs time out despite the loader's earlier
+  probe, including job/clock setup and descriptor paths. Do not reboot or
+  write another image without separate authorization.
+
 ## Parser-fix boot-test status (2026-11-27)
 
 - After separate user authorization, issued one `adb reboot` to test the
