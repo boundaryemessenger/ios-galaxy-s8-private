@@ -64,15 +64,35 @@ Observations on the phone and build results are kept apart from plans.
   preserved backup tail; SHA-256
   `80a2927dd3ee51d13bfcb3657a755dd62da26d515ac1c8bd7dd805ad49fc4cae`.
   After the separately authorized single reboot, the user reported a black
-  screen. ADB and fastboot showed no device during the subsequent monitor;
-  no fresh SWEETLOG or pmsg was collected. The cause is unknown (boot stall,
-  display failure, or USB state); this does not establish whether the MMU
-  correction worked. No second reboot was issued. The `<K256>` LSE warning
-  remains unresolved and no GPU frame is verified.
-- Next: obtain explicit authorization before any additional reboot. If the
-  phone is returned to TWRP, collect a fresh SWEETLOG before another test.
-  Do not claim acceleration is fixed until Mali jobs complete and a
-  GPU-presented frame is confirmed.
+  screen. ADB/fastboot initially did not enumerate; after the user returned
+  the phone to TWRP, a read-only SWEETLOG capture was saved outside git at
+  `%TEMP%\s8-mali-mmu-boot-20261127-1847\`. The 4,198,400-byte ring contains
+  3,302,188 bytes, flush #30; decoded text is 3,350,487 bytes, SHA-256
+  `6454491525ee311e56b1094c5e03d84aa35b3324f091e8a55d303178ab6b742f`.
+  The 951-byte pmsg is garbled.
+- The log shows XNU, SpringBoard, and backboardd started; display-on and
+  framebuffer swaps were logged. The loader's Mali fragment test passed;
+  XNU published S8MaliMetal and created pipelines. The XNU Metal path then
+  logged 7 job-chain failures with result 2 / JS `0x8`, 23 with result 3, and
+  3 failed presents, without job IRQs or AS faults. Seven command-buffer
+  checkpoints, through command buffer 601 / 18,314 draws, all report
+  `0 on the GPU`. Later the GPU allocator reports failures with 48,128 KiB
+  live; FPS samples reflect CPU copies, not GPU completion. The correction
+  did not produce verified GPU execution. The logs do not explain the user's
+  black-screen observation or include an AS_TRANSCFG readback. The `<K256>`
+  LSE warning remains unresolved.
+- Source tracing confirms result 3 is returned when `s8gpu_ready` is false;
+  the framebuffer presenter clears that shared flag after three failures.
+  The 23 result-3 entries are therefore downstream rejections. The initial
+  slot-1 vertex/tiler jobs timed out with JS status `0x8` (ACTIVE).
+- `/dev/s8mali` allocations use write-combined mappings, but the submit path
+  lacked the DSB used by the kernel presenter before starting a job. Added a
+  DSB before `JS_COMMAND_START` in `s8_gpu_present.inc` and synchronized patch
+  0124. This is an evidence-based ordering hypothesis, not a hardware-verified
+  fix.
+- Next: validate the kernel patch/build, then request separate authorization
+  before any further BOOT write or reboot. Do not claim acceleration is fixed
+  until GPU jobs complete and a GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 

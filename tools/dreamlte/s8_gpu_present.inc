@@ -456,6 +456,8 @@ s8gpu_user_submit(struct s8mali_submit *s)
 	s8gpu_wr(js + 0x50, s8gpu_shaders);             /* JS_AFFINITY_NEXT */
 	s8gpu_wr(js + 0x54, 0);
 	s8gpu_wr(js + 0x58, (8u << 16) | (3u << 12) | (3u << 8));
+	/* Publish write-combined user descriptors before starting the job. */
+	__builtin_arm_dsb(0xf);
 	s8gpu_wr(js + 0x60, 1);                         /* JS_COMMAND_START */
 	uint32_t irq = 0;
 	/* Busy-wait the first 2 ms (frame-sized jobs), then sleep-poll. */
