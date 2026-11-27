@@ -127,9 +127,10 @@ Observations on the phone and build results are kept apart from plans.
   from the exact partition-length comparison. The phone was in TWRP at
   preflight. The single authorized reboot was issued and accepted. At 30, 60,
   and 90 seconds afterward, neither ADB nor fastboot enumerated. The screen
-  state is not observable from this session. No additional reboot or partition
-  write was issued. Await the user's screen report; do not claim acceleration
-  is fixed until GPU jobs complete and a GPU-presented frame is confirmed.
+  is reported black by the user; this is not a device-side capture. No
+  additional reboot or partition write was issued. Await TWRP access for
+  read-only diagnostics. Do not claim acceleration is fixed until GPU jobs
+  complete and a GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
