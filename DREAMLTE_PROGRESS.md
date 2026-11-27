@@ -40,8 +40,23 @@ Observations on the phone and build results are kept apart from plans.
   `5959a3ffe3b237491a0a8f5d33a8cb33b870a764b233d52170ab0092d652ea28`.
   The LSE scan reports one instruction in `<K256>`, also present in prior
   successful run `45648104310`; this inherited warning remains unresolved.
-  No GPU frame is verified. Any later BOOT write or reboot requires separate
-  explicit authorization.
+  Matching the earlier CI result does not establish safety.
+- Packaged an offline candidate at
+  `F:\ios-sweet-temp\stage3-mali-mmu-20261127\s8-stage3-mali-mmu.img`:
+  19,144,720 bytes, SHA-256
+  `997170ab16d2d07ea3a2ec73c127d6802c1863f4b62c63d1355204dc35702681`.
+  It uses the successful kernel artifact, parser-fix overlay, prior
+  candidate loader and ADT, and preserved baseline DT. Structural checks
+  verify the outer image, all 10 kernel segments byte-for-byte, all 11
+  SWEETXNU segments, retained boot arguments, and exact overlay bytes and
+  physical mapping. The prior candidate ADT has no `/product` node; it was
+  preserved unchanged except for the updated S8Overlay mapping. No device
+  write or reboot occurred during packaging; the last verified BOOT hash
+  remains `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
+  The candidate has not been boot-tested and no GPU frame is verified.
+- Next: identify the exact `<K256>` LSE instruction and determine whether it
+  can execute on the S8's Cortex-A53 CPUs. Do not write BOOT or reboot until
+  the warning is resolved and separate explicit authorization is obtained.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
