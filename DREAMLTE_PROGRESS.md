@@ -39,10 +39,23 @@ Observations on the phone and build results are kept apart from plans.
   Validation confirms 10 kernel segments byte-match the CI artifact, the
   2,007,760-byte overlay maps at `0x8828dc000`, and loader, DT, and boot args
   are preserved. No `rootrw=1` or `s8gpu=` argument.
-- No device write/reboot occurred during this work; last read-only check had
-  TWRP with the DSB candidate still installed. This diagnostic is not a GPU
-  fix or a boot-tested image. Require fresh authorization before a BOOT write
-  and separate authorization before reboot.
+- After the user's explicit BOOT-only authorization, fresh TWRP preflight
+  confirmed Galaxy S8 / `dreamlte`, BOOT `/dev/block/sda7`, 41,943,040-byte
+  capacity, 4096-byte sectors, and original full-partition SHA-256
+  `5b080e7221144e34cac0a36ee4cd22e00bb110320b2cc0bd6894ffde28855683`.
+  Fresh full BOOT backup:
+  `F:\iOS Galaxy\backup\G950F-BOOT-before-as0-selftest-20261127-202135.img`,
+  41,943,040 bytes, same SHA-256.
+- Wrote only the sector-aligned 19,148,800-byte candidate extent (4,675
+  sectors), preserving the 4,080-byte sector-boundary tail from the fresh
+  backup. Extent SHA-256:
+  `6e78e08c50d4e190c963f75ad9be3c7b5597b480ea5adfdacf1dec825c3ecdd7`.
+  Full 40 MiB post-write readback was compared byte-for-byte against the
+  expected candidate plus preserved BOOT tail; both hash to
+  `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`.
+- No reboot was issued. The candidate is unboot-tested; no GPU frame or
+  acceleration has been confirmed. The phone was still in TWRP during the
+  readback. Obtain separate explicit authorization before reboot.
 
 ## Mali AArch64 MMU correction (2026-11-27)
 
