@@ -56,11 +56,29 @@ Observations on the phone and build results are kept apart from plans.
 - After separate explicit authorization, one reboot was issued through ADB;
   the command returned success. During the next 120 seconds, neither ADB nor
   fastboot enumerated. The user reports a black screen. After the user opted
-  to return it to TWRP, recovery ADB was still unavailable during a further
-  120-second wait. No SWEETLOG was captured, so the cause remains unknown.
-  No further reboot or partition write was attempted. No GPU frame or
-  acceleration is confirmed. Next: wait for the user to restore TWRP ADB, then
-  capture the boot log read-only before deciding on another change.
+  to return it to TWRP, recovery ADB later reconnected. A read-only capture is
+  outside git at
+  `F:\ios-sweet-temp\s8-as0-selftest-20261127\postboot-logs-20261127-210510\`.
+  The SWEETLOG ring is 4,198,400 bytes (182,060 bytes used, flush #29),
+  SHA-256 `8b3b1cdba0462631edb658ab6109ade3b419a1aea5d7c64b4194e58e479dd890`;
+  decoded text is 184,729 bytes, SHA-256
+  `4e217e0b3ec9e4bc76d1d85bbdfbfdcabb24df6f1016823f7413b159c44b6c9e`.
+  The 951-byte pmsg is garbled; `console-ramoops-0` is unavailable.
+- XNU's AS0 `WRITE_VALUE` self-test passed: IRQ/stop IRQ `0x2`, JS `0x0`,
+  target `0x5a5a1234`, no MMU/AS fault, AS0 config `0x420001c6`. This proves
+  the minimal job can execute through the active AS0 setup, not that Metal
+  draws work. The log reaches SpringBoard/backboardd, but reports 16 slot-1
+  result-2 jobs (`JS 0x8`, no job IRQ or AS fault), 30 vertex/tiler and 3
+  fragment chain failures, 2 failed presents, and both command-buffer samples
+  show `0 on the GPU`. A 10-second framebuffer sample shows one shown swap
+  with a 1,025,865-us CPU copy; the user reports the display remained black.
+  The screen report is not direct observation, and no GPU frame is confirmed.
+- No partition write or reboot occurred after log collection; final TWRP
+  check confirmed BOOT hash
+  `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`.
+  Next: trace the real Bifrost vertex/tiler job setup against the passing
+  minimal `WRITE_VALUE` path before preparing another candidate. Any further
+  BOOT write or reboot requires fresh explicit authorization.
 
 ## Mali AArch64 MMU correction (2026-11-27)
 
