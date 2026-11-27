@@ -55,11 +55,12 @@ Observations on the phone and build results are kept apart from plans.
   `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`.
 - After separate explicit authorization, one reboot was issued through ADB;
   the command returned success. During the next 120 seconds, neither ADB nor
-  fastboot enumerated. The screen state was not observed and no SWEETLOG was
-  captured, so the cause and visible boot state are unknown. No further reboot
-  or partition write was attempted. No GPU frame or acceleration is confirmed.
-  Next: user reports the screen state or returns the phone to TWRP, then capture
-  the boot log read-only before deciding on another change.
+  fastboot enumerated. The user reports a black screen. After the user opted
+  to return it to TWRP, recovery ADB was still unavailable during a further
+  120-second wait. No SWEETLOG was captured, so the cause remains unknown.
+  No further reboot or partition write was attempted. No GPU frame or
+  acceleration is confirmed. Next: wait for the user to restore TWRP ADB, then
+  capture the boot log read-only before deciding on another change.
 
 ## Mali AArch64 MMU correction (2026-11-27)
 
