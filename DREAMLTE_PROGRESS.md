@@ -33,9 +33,15 @@ Observations on the phone and build results are kept apart from plans.
   failed: patch 0136 declared 625 added lines but contains 635, truncating
   `S8GPU.cpp` before its closing brace and `#endif`. The log reports those
   resulting errors; no compile error from `SweetFramebuffer.cpp` was found.
-  Commit `b8729ec` corrects the hunk count to 635. Next, push this correction
-  and rerun the XNU workflow. Any later BOOT write or reboot requires
-  separate explicit authorization.
+  Commit `b8729ec` corrects the hunk count to 635. With approval, the branch
+  was pushed through commit `7c190a9`; Actions run `46041768312` completed
+  successfully in 14m19s. Its `kernel.development.a5xelte` artifact is
+  17,207,104 bytes, SHA-256
+  `5959a3ffe3b237491a0a8f5d33a8cb33b870a764b233d52170ab0092d652ea28`.
+  The LSE scan reports one instruction in `<K256>`, also present in prior
+  successful run `45648104310`; this inherited warning remains unresolved.
+  No GPU frame is verified. Any later BOOT write or reboot requires separate
+  explicit authorization.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
