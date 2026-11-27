@@ -4,6 +4,29 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Parser-fix BOOT write (2026-11-27)
+
+- After explicit authorization, wrote the parser-fix candidate only to BOOT
+  `/dev/block/sda7` on `dreamlte` / Galaxy S8 in TWRP 3.7.0_9-0. The fresh
+  pre-write backup is
+  `F:\iOS Galaxy\backup\G950F-BOOT-before-fatlib-fix-20261127-162210.img`
+  (41,943,040 bytes, SHA-256
+  `818505107a56bcd7c74a5b50c371ee04839a044649bd82e921847b6c72e688c9`),
+  matching the pre-write BOOT hash.
+- Candidate
+  `F:\ios-sweet-temp\stage3-metal-fatlib-fix-20261127\s8-stage3-metal-fatlib-fix.img`
+  is 19,144,720 bytes, SHA-256
+  `ca03739f705098ab7f95910c26e084377038cc0fe66577350a05288d47cb4362`.
+  The sector-aligned write extent was 19,148,800 bytes; the remaining 4,080
+  bytes were preserved from the fresh backup.
+- Read back the full 41,943,040-byte partition. It matches the expected
+  candidate-plus-backup-tail byte-for-byte and hashes to
+  `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
+  Device remains in TWRP; no reboot or USERDATA change occurred. Wait for
+  separate explicit reboot authorization.
+- This verifies the image write, not boot success or Metal rendering. The
+  parser fix has passed native tests, but its runtime effect is unverified.
+
 ## ReportCrash triage and metallib parser fix (2026-11-27)
 
 - This supersedes the earlier note that the XNU trace was unavailable. The
