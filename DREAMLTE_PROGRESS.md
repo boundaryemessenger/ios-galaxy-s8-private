@@ -63,12 +63,16 @@ Observations on the phone and build results are kept apart from plans.
   Full partition readback is byte-identical to the expected candidate plus
   preserved backup tail; SHA-256
   `80a2927dd3ee51d13bfcb3657a755dd62da26d515ac1c8bd7dd805ad49fc4cae`.
-  The device remains in TWRP; no reboot occurred. The LSE warning is
-  unresolved, the candidate is not boot-tested, and no GPU frame is verified.
-- Next: obtain separate explicit authorization before rebooting. If
-  authorized, boot once, collect a fresh SWEETLOG, and confirm Mali jobs
-  complete and a GPU-presented frame appears. Do not claim acceleration is
-  fixed until verified.
+  After the separately authorized single reboot, the user reported a black
+  screen. ADB and fastboot showed no device during the subsequent monitor;
+  no fresh SWEETLOG or pmsg was collected. The cause is unknown (boot stall,
+  display failure, or USB state); this does not establish whether the MMU
+  correction worked. No second reboot was issued. The `<K256>` LSE warning
+  remains unresolved and no GPU frame is verified.
+- Next: obtain explicit authorization before any additional reboot. If the
+  phone is returned to TWRP, collect a fresh SWEETLOG before another test.
+  Do not claim acceleration is fixed until Mali jobs complete and a
+  GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
