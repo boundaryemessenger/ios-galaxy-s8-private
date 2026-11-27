@@ -19,16 +19,30 @@ Observations on the phone and build results are kept apart from plans.
   AArch64 path works.
 - Static checks passed: `git diff --check`, `apply-dreamlte.py` Python syntax,
   source/patch parity (731 lines), and `git apply --stat`. No `g++`/Clang
-  compiler was found on `PATH`. XNU Actions run `46060326487` is building; no
-  device write or reboot is authorized.
+  compiler was found on `PATH`. XNU Actions run
+  [46060326487](https://github.com/boundaryemessenger/ios-galaxy-s8-private/actions/runs/46060326487)
+  succeeded for head `e0f032c70dd9ccd39714f07b1b067bca44039fd1` from
+  19:57:56Z to 20:18:02Z. Kernel artifact: 17,190,768 bytes,
+  SHA-256 `8d760ea3141a25c5aef79eed5caad00da51bd3a5b89cf8959362369cf4c5da59`.
+  The LSE scan reports one `<K256>` instruction; unresolved.
 - Reproduced the previous DSB candidate offline using the saved CI kernel,
   base ADT, parser-fix overlay, boot arguments, loader, and image template.
   The payload (`8484671764ac31984b8cadc974c116fd21356372fd4da323bb540086af70dcfd`)
   and boot image (`292326090bd87a0c6406d4c9564af00fc870fae70391c5ac54cdf65ea1347723`)
   hashes matched exactly.
-- Next: fix any CI errors, then package the diagnostic kernel offline if it
-  builds. Ask for fresh explicit authorization before another BOOT write or
-  reboot. No GPU acceleration is confirmed.
+- Diagnostic candidate:
+  `F:\ios-sweet-temp\s8-as0-selftest-20261127\candidate\s8-stage3-as0-selftest.img`,
+  19,144,720 bytes, SHA-256
+  `8dbb79955bcac0a03ad78a5c4dc504c3221b57f4f7eda831e7b15b3cabbd801c`.
+  Payload: 18,602,992 bytes, SHA-256
+  `92214fb79989d9349169b71090e782d1987bff616d360d177007e47b65c5a577`.
+  Validation confirms 10 kernel segments byte-match the CI artifact, the
+  2,007,760-byte overlay maps at `0x8828dc000`, and loader, DT, and boot args
+  are preserved. No `rootrw=1` or `s8gpu=` argument.
+- No device write/reboot occurred during this work; last read-only check had
+  TWRP with the DSB candidate still installed. This diagnostic is not a GPU
+  fix or a boot-tested image. Require fresh authorization before a BOOT write
+  and separate authorization before reboot.
 
 ## Mali AArch64 MMU correction (2026-11-27)
 
