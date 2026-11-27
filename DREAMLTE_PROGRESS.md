@@ -50,13 +50,25 @@ Observations on the phone and build results are kept apart from plans.
   verify the outer image, all 10 kernel segments byte-for-byte, all 11
   SWEETXNU segments, retained boot arguments, and exact overlay bytes and
   physical mapping. The prior candidate ADT has no `/product` node; it was
-  preserved unchanged except for the updated S8Overlay mapping. No device
-  write or reboot occurred during packaging; the last verified BOOT hash
-  remains `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
-  The candidate has not been boot-tested and no GPU frame is verified.
-- Next: identify the exact `<K256>` LSE instruction and determine whether it
-  can execute on the S8's Cortex-A53 CPUs. Do not write BOOT or reboot until
-  the warning is resolved and separate explicit authorization is obtained.
+  preserved unchanged except for the updated S8Overlay mapping.
+- After the user's authorization, wrote the candidate to BOOT
+  `/dev/block/sda7` only. Fresh TWRP preflight confirmed Galaxy S8 / `dreamlte`,
+  41,943,040-byte capacity and 4096-byte sectors. Full pre-write backup
+  `F:\iOS Galaxy\backup\G950F-BOOT-before-mali-mmu-20261127-1825.img`
+  (41,943,040 bytes) matches the prior BOOT hash
+  `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
+  The first ADB capture appended 91 bytes of `dd` status; its partition-sized
+  prefix matched, and the raw stream was retained separately. Wrote the
+  19,148,800-byte aligned extent: candidate plus 4,080 bytes from the backup.
+  Full partition readback is byte-identical to the expected candidate plus
+  preserved backup tail; SHA-256
+  `80a2927dd3ee51d13bfcb3657a755dd62da26d515ac1c8bd7dd805ad49fc4cae`.
+  The device remains in TWRP; no reboot occurred. The LSE warning is
+  unresolved, the candidate is not boot-tested, and no GPU frame is verified.
+- Next: obtain separate explicit authorization before rebooting. If
+  authorized, boot once, collect a fresh SWEETLOG, and confirm Mali jobs
+  complete and a GPU-presented frame appears. Do not claim acceleration is
+  fixed until verified.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
