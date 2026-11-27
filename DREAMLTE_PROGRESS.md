@@ -73,12 +73,17 @@ Observations on the phone and build results are kept apart from plans.
   show `0 on the GPU`. A 10-second framebuffer sample shows one shown swap
   with a 1,025,865-us CPU copy; the user reports the display remained black.
   The screen report is not direct observation, and no GPU frame is confirmed.
+- In the same boot, the loader's pre-XNU probe reports reset/L2/tiler/shader
+  ready and `GPU DRAW WORKS=1` with 256/256 clear pixels, but that is a
+  clear-only fragment job using identity-mode AS0; it does not exercise XNU's
+  AArch64 page tables or shader execution. Together with XNU's passing
+  `WRITE_VALUE` test and failing shader jobs, this narrows the next experiment
+  to running that exact loader clear job through XNU's active AS0. No cause is
+  established yet.
 - No partition write or reboot occurred after log collection; final TWRP
   check confirmed BOOT hash
   `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`.
-  Next: trace the real Bifrost vertex/tiler job setup against the passing
-  minimal `WRITE_VALUE` path before preparing another candidate. Any further
-  BOOT write or reboot requires fresh explicit authorization.
+  Any further BOOT write or reboot requires fresh explicit authorization.
 
 ## Mali AArch64 MMU correction (2026-11-27)
 
