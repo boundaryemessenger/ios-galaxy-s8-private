@@ -53,9 +53,13 @@ Observations on the phone and build results are kept apart from plans.
   Full 40 MiB post-write readback was compared byte-for-byte against the
   expected candidate plus preserved BOOT tail; both hash to
   `b067973c1d242e24b5e8107073d7381465e37c8da71a33258c46b2b74b671542`.
-- No reboot was issued. The candidate is unboot-tested; no GPU frame or
-  acceleration has been confirmed. The phone was still in TWRP during the
-  readback. Obtain separate explicit authorization before reboot.
+- After separate explicit authorization, one reboot was issued through ADB;
+  the command returned success. During the next 120 seconds, neither ADB nor
+  fastboot enumerated. The screen state was not observed and no SWEETLOG was
+  captured, so the cause and visible boot state are unknown. No further reboot
+  or partition write was attempted. No GPU frame or acceleration is confirmed.
+  Next: user reports the screen state or returns the phone to TWRP, then capture
+  the boot log read-only before deciding on another change.
 
 ## Mali AArch64 MMU correction (2026-11-27)
 
