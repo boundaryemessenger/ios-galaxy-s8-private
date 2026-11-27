@@ -90,9 +90,12 @@ Observations on the phone and build results are kept apart from plans.
   DSB before `JS_COMMAND_START` in `s8_gpu_present.inc` and synchronized patch
   0124. This is an evidence-based ordering hypothesis, not a hardware-verified
   fix.
-- Next: validate the kernel patch/build, then request separate authorization
-  before any further BOOT write or reboot. Do not claim acceleration is fixed
-  until GPU jobs complete and a GPU-presented frame is confirmed.
+- Source commit `2d75541` was pushed. XNU Actions run
+  [46055036133](https://github.com/boundaryemessenger/ios-galaxy-s8-private/actions/runs/46055036133)
+  is running with `A5XELTE` / `DEVELOPMENT`; its build result is pending.
+- Next: record the build result, then request separate authorization before
+  any further BOOT write or reboot. Do not claim acceleration is fixed until
+  GPU jobs complete and a GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
