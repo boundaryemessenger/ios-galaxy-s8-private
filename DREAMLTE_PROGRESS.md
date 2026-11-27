@@ -88,8 +88,8 @@ Observations on the phone and build results are kept apart from plans.
 - `/dev/s8mali` allocations use write-combined mappings, but the submit path
   lacked the DSB used by the kernel presenter before starting a job. Added a
   DSB before `JS_COMMAND_START` in `s8_gpu_present.inc` and synchronized patch
-  0124. This is an evidence-based ordering hypothesis, not a hardware-verified
-  fix.
+  0124. This was an evidence-based ordering hypothesis; the new hardware run
+  shows the same job timeouts, so the DSB change alone is not a fix.
 - Source commit `2d75541` was pushed. XNU Actions run
   [46055036133](https://github.com/boundaryemessenger/ios-galaxy-s8-private/actions/runs/46055036133)
   succeeded for `A5XELTE` / `DEVELOPMENT`. The artifact is 17,190,720 bytes,
@@ -127,10 +127,29 @@ Observations on the phone and build results are kept apart from plans.
   from the exact partition-length comparison. The phone was in TWRP at
   preflight. The single authorized reboot was issued and accepted. At 30, 60,
   and 90 seconds afterward, neither ADB nor fastboot enumerated. The screen
-  is reported black by the user; this is not a device-side capture. No
-  additional reboot or partition write was issued. Await TWRP access for
-  read-only diagnostics. Do not claim acceleration is fixed until GPU jobs
-  complete and a GPU-presented frame is confirmed.
+  was reported black by the user. The user returned it to TWRP; read-only ADB
+  again confirmed `dreamlte`, Galaxy S8, USERDATA `/dev/block/sda26`, and the
+  current BOOT hash `5b080e7221144e34cac0a36ee4cd22e00bb110320b2cc0bd6894ffde28855683`.
+- New read-only capture is outside git at
+  `%TEMP%\s8-dsb-ordering-20261127-1947\`: SWEETLOG ring 4,198,400 bytes,
+  total 326,236 bytes, flush #38; decoded log 330,927 bytes, SHA-256
+  `f43d799edb3e8643cd3da40d4f865d62176b4f1435b97001eccd36b82863e6c5`.
+  The 951-byte pmsg is garbled (SHA-256
+  `575f87c4bed40897fda581630225799e48e611888cd6c4ba6c0b03e7e29e9199`).
+  `/proc/last_kmsg` is 24,974 bytes of TWRP recovery output, not the failed
+  iOS kernel log. No BOOT write or reboot was performed for this capture.
+- The log shows the loader's GPU fragment probe succeeded, XNU reported Mali
+  ready, and SpringBoard/backboardd ran with framebuffer swaps. However, the
+  Metal draw path still had 7 slot-1 vertex/tiler timeouts (result 2, JS
+  `0x8`, IRQ `0`, no AS fault), 3 failed framebuffer presents with the same
+  active status, 14 downstream vertex/tiler result-3 rejections, and 9
+  fragment result-3 rejections. Both logged command-buffer summaries say
+  `0 on the GPU`; repeated GPU allocation failures also remain. This hardware
+  run refutes the DSB-only hypothesis. The user's black-screen report is
+  consistent with the failed GPU path but is not explained by the log.
+  No GPU acceleration is confirmed. Next: trace the vertex/tiler job path and
+  prepare any diagnostics offline; require fresh authorization before another
+  BOOT write or reboot.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
