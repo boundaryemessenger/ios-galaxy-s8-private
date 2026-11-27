@@ -124,9 +124,12 @@ Observations on the phone and build results are kept apart from plans.
   the exact 41,943,040-byte host readback prefix both match the expected full
   image hash `5b080e7221144e34cac0a36ee4cd22e00bb110320b2cc0bd6894ffde28855683`.
   The readback stream included 98 trailing bytes of `dd` status, excluded
-  from the exact partition-length comparison. The phone remains in TWRP; the
-  authorized one reboot is the next action. Do not claim acceleration is
-  fixed until GPU jobs complete and a GPU-presented frame is confirmed.
+  from the exact partition-length comparison. The phone was in TWRP at
+  preflight. The single authorized reboot was issued and accepted. At 30, 60,
+  and 90 seconds afterward, neither ADB nor fastboot enumerated. The screen
+  state is not observable from this session. No additional reboot or partition
+  write was issued. Await the user's screen report; do not claim acceleration
+  is fixed until GPU jobs complete and a GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
