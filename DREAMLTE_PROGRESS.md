@@ -24,14 +24,15 @@ Observations on the phone and build results are kept apart from plans.
 - Validation: `S8GPUDescriptorTest.cpp` passes with
   `g++ -std=c++11 -Wall -Wextra -Werror`; generator Python syntax, source /
   patch consistency, patch hunk counts, `git apply --stat`, and `git diff
-  --check` pass. This is host/static validation only: no XNU kernel build or
-  GitHub Actions run has happened, and no GPU frame has been verified.
+  --check` pass. This is host/static validation only; no GPU frame has been
+  verified.
 - The phone remains in TWRP; BOOT `/dev/block/sda7` remains at the previously
   verified hash
   `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
-  No partition write or reboot was performed. The source commit is local and
-  unpushed. Next, obtain approval to push and run the XNU workflow; any later
-  BOOT write or reboot requires separate explicit authorization.
+  No partition write or reboot was performed. With user approval, the source
+  branch was pushed and XNU Actions run `46039636025` was dispatched against
+  commit `665f6fe`; its build result is still pending. Any later BOOT write
+  or reboot requires separate explicit authorization.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
