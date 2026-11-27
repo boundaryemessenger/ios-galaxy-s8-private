@@ -4,6 +4,18 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Parser-fix boot-test status (2026-11-27)
+
+- After separate user authorization, issued one `adb reboot` to test the
+  parser-fix BOOT image. The command returned successfully. The user reports
+  the screen is black; ADB and Windows USB enumeration are both absent.
+- No post-boot SWEETLOG could be collected, so the parser fix's runtime effect
+  is unknown. No second reboot or partition write was issued. The last
+  verified full BOOT readback before reboot was
+  `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
+- Next step: get the phone back into TWRP with user authorization and pull a
+  new SWEETLOG before attributing the black screen or making further changes.
+
 ## Parser-fix BOOT write (2026-11-27)
 
 - After explicit authorization, wrote the parser-fix candidate only to BOOT
