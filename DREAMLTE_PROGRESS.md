@@ -40,7 +40,10 @@ Observations on the phone and build results are kept apart from plans.
   plus 4,080 bytes to complete the sector boundary. It disables GPU/Metal boot
   arguments and reached lock/home in earlier user-confirmed boots; a later
   restoration only had an Apple-logo report, so success is not guaranteed.
-  The separately authorized reboot has not yet been issued.
+  The separately authorized single reboot was issued and the user reports
+  that it boots without GPU. The exact visible screen (lock/home versus an
+  earlier boot stage) has not been specified. GPU/Metal acceleration remains
+  disabled and unverified.
 
 - Commit `e0f032c` adds a slot-1 `WRITE_VALUE` self-test after AS0 is
   configured in the active AArch64 4K mode. It maps one dedicated page after
