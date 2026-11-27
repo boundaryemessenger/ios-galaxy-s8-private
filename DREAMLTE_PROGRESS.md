@@ -4,6 +4,35 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Mali AArch64 MMU correction (2026-11-27)
+
+- The previous SWEETLOG identified the active blocker as Mali job timeouts
+  (`JS status 0x8`, no job IRQ, and no AS fault). An earlier device probe
+  recorded `GPU_MMU_FEATURES=0x2830`, i.e. 48-bit VA and 40-bit PA.
+- Comparing the active AS0 setup with Linux Panfrost's AArch64 4K
+  configuration found that XNU wrote only `AS_TRANSCFG_ADRMODE_AARCH64_4K`
+  (`0x6`), omitting the page-table-walker write-back, read-ahead, and
+  `INA_BITS(55 - VA_BITS)` fields. For the observed geometry the complete
+  configuration is `0x420001c6`. The active table descriptors also set AF
+  bit 10, which belongs on leaf page descriptors, not AArch64 table entries.
+  These are concrete configuration defects and plausible causes of the
+  timeout; neither is confirmed as the sole runtime cause.
+- Commit `e8a3cbb` adds a shared `s8_mali_mmu.h` helper used by the presenter
+  and host test, checks the expected 48/40-bit geometry, writes the complete
+  AS0 configuration, and uses `PA | 3` table descriptors. `0124-dreamlte-s8.patch`
+  was synchronized with the generator source.
+- Validation: `S8GPUDescriptorTest.cpp` passes with
+  `g++ -std=c++11 -Wall -Wextra -Werror`; generator Python syntax, source /
+  patch consistency, patch hunk counts, `git apply --stat`, and `git diff
+  --check` pass. This is host/static validation only: no XNU kernel build or
+  GitHub Actions run has happened, and no GPU frame has been verified.
+- The phone remains in TWRP; BOOT `/dev/block/sda7` remains at the previously
+  verified hash
+  `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
+  No partition write or reboot was performed. The source commit is local and
+  unpushed. Next, obtain approval to push and run the XNU workflow; any later
+  BOOT write or reboot requires separate explicit authorization.
+
 ## Post-fix boot diagnostics (2026-11-27)
 
 - The user returned the handset to TWRP. Read-only ADB confirms
