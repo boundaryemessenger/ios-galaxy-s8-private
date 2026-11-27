@@ -114,10 +114,19 @@ Observations on the phone and build results are kept apart from plans.
   Its sector-aligned write extent is 19,148,800 bytes (candidate plus 4,080
   preserved bytes), SHA-256
   `a30ae4d86f9dba505a628c2e1ee1d5a0d94921e94e15d94d11f65c64a100f560`.
-  No BOOT write or reboot was performed; the device was not rechecked during
-  packaging (last reported in TWRP). Request separate authorization before
-  any device write or reboot. Do not claim acceleration is fixed until GPU
-  jobs complete and a GPU-presented frame is confirmed.
+  The user authorized writing this candidate and one test reboot. Fresh TWRP
+  preflight confirmed Galaxy S8 / `dreamlte`, BOOT `PARTNAME=BOOT` at
+  `/dev/block/sda7`, a 41,943,040-byte partition with 4096-byte sectors, and
+  the expected pre-write hash
+  `80a2927dd3ee51d13bfcb3657a755dd62da26d515ac1c8bd7dd805ad49fc4cae`.
+  Wrote exactly 19,148,800 bytes (4,675 4096-byte blocks) through the verified
+  BOOT symlink; `sync` succeeded. The device-side full-partition SHA-256 and
+  the exact 41,943,040-byte host readback prefix both match the expected full
+  image hash `5b080e7221144e34cac0a36ee4cd22e00bb110320b2cc0bd6894ffde28855683`.
+  The readback stream included 98 trailing bytes of `dd` status, excluded
+  from the exact partition-length comparison. The phone remains in TWRP; the
+  authorized one reboot is the next action. Do not claim acceleration is
+  fixed until GPU jobs complete and a GPU-presented frame is confirmed.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
