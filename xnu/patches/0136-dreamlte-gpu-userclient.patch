@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..cfa86dd
 --- /dev/null
 +++ b/iokit/Kernel/arm/S8GPU.cpp
-@@ -0,0 +1,625 @@
+@@ -0,0 +1,635 @@
 +/* SPDX-License-Identifier: GPL-2.0-only
 + *
 + * Galaxy S8 (dreamlte) Mali-G71 MP20 for userspace: an IOKit service whose
