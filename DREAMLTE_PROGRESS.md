@@ -28,9 +28,10 @@ Observations on the phone and build results are kept apart from plans.
   switches to CPU presentation. The ring records one shown swap in 10 seconds
   and an 803,875 us CPU copy, consistent with the reported black display but
   not proof of its exact visible state. Metal rendering is not working yet.
-- Next: investigate why XNU GPU jobs time out despite the loader's earlier
-  probe, including job/clock setup and descriptor paths. Do not reboot or
-  write another image without separate authorization.
+- Next: compare XNU's AS0 page-table mode and job setup against the loader's
+  earlier successful identity-mode probe, then verify descriptor/cache
+  visibility and clocks. This is a diagnostic lead, not a confirmed cause.
+  Do not reboot or write another image without separate authorization.
 
 ## Parser-fix boot-test status (2026-11-27)
 
