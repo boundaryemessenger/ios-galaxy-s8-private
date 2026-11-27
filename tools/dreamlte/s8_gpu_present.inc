@@ -32,6 +32,7 @@ extern "C" void flush_dcache(vm_offset_t addr, unsigned count, int phys);
 #define S8GPU_AS0               0x2400
 #define S8GPU_PT_PA             (S8_BLIT_BASE_PA + 0x10000)     /* page-table pool */
 #define S8GPU_PT_PAGES          1024                            /* 4 MiB pool */
+#define S8GPU_TEST_PA           (S8GPU_PT_PA + (uint64_t)S8GPU_PT_PAGES * 4096) /* isolated test page */
 #define S8GPU_SLOTS             16
 #define S8GPU_SLOT_VA           0x100000000ULL
 #define S8GPU_SLOT_SIZE         0x2000000ULL                    /* 32 MiB */
@@ -151,6 +152,75 @@ s8gpu_flush_tlb(void)
 	s8gpu_wait(S8GPU_AS0 + 0x28, 1, 0, 100000);
 }
 
+static bool
+s8gpu_write_value_test(volatile uint32_t *page)
+{
+	const uint32_t magic = 0x5a5a1234u;
+	const uint32_t js = S8GPU_JS0 + 0x80;          /* slot 1 */
+	const uint32_t done = 1u << 1, fail = 1u << 17;
+	for (unsigned i = 0; i < 0x40 / 4; i++) {
+		page[i] = 0;
+	}
+	page[4] = 1u | (2u << 1) | (1u << 16);        /* v6 WRITE_VALUE header */
+	page[8] = (uint32_t)(S8GPU_TEST_PA + 0x100);
+	page[9] = (uint32_t)((S8GPU_TEST_PA + 0x100) >> 32);
+	page[10] = 6;                                  /* immediate 32-bit value */
+	page[12] = magic;
+	page[0x100 / 4] = ~magic;
+	clean_dcache((vm_offset_t)page, 4096, 0);
+	__builtin_arm_dsb(0xf);
+
+	s8gpu_wr(S8GPU_JOB_IRQ_CLEAR, done | fail);
+	s8gpu_wr(0x2004, 0xffffffffu);                  /* MMU_IRQ_CLEAR */
+	s8gpu_wr(js + 0x40, (uint32_t)S8GPU_TEST_PA);
+	s8gpu_wr(js + 0x44, (uint32_t)(S8GPU_TEST_PA >> 32));
+	s8gpu_wr(js + 0x50, s8gpu_shaders);
+	s8gpu_wr(js + 0x54, 0);
+	s8gpu_wr(js + 0x58, (8u << 16) | (3u << 12) | (3u << 8));
+	__builtin_arm_dsb(0xf);
+	s8gpu_wr(js + 0x60, 1);
+	uint32_t irq = 0;
+	for (unsigned i = 0; i < 10000; i++) {         /* 100 ms */
+		irq = s8gpu_rd(S8GPU_JOB_IRQ_RAWSTAT);
+		if (irq & (done | fail)) {
+			break;
+		}
+		IODelay(10);
+	}
+	uint32_t stop_irq = irq;
+	if (!(irq & (done | fail))) {
+		s8gpu_wr(js + 0x60, 3);                    /* bounded hard stop */
+		for (unsigned i = 0; i < 100000; i++) {
+			stop_irq = s8gpu_rd(S8GPU_JOB_IRQ_RAWSTAT);
+			if (stop_irq & (done | fail)) {
+				break;
+			}
+			IODelay(1);
+		}
+	}
+	flush_dcache((vm_offset_t)page, 4096, 0);
+	uint32_t status = s8gpu_rd(js + 0x24);
+	uint32_t exception = page[0];
+	uint32_t value = page[0x100 / 4];
+	uint32_t fault = s8gpu_rd(S8GPU_AS0 + 0x1c);
+	uint32_t mmu_irq = s8gpu_rd(0x2000);
+	uint32_t as_status = s8gpu_rd(S8GPU_AS0 + 0x28);
+	uint64_t fault_addr = s8gpu_rd(S8GPU_AS0 + 0x20) |
+	    (uint64_t)s8gpu_rd(S8GPU_AS0 + 0x24) << 32;
+	uint64_t root = s8gpu_rd(S8GPU_AS0 + 0x00) |
+	    (uint64_t)s8gpu_rd(S8GPU_AS0 + 0x04) << 32;
+	uint32_t transcfg = s8gpu_rd(S8GPU_AS0 + 0x30);
+	uint32_t final_irq = irq | stop_irq;
+	bool ok = (final_irq & done) != 0 && (final_irq & fail) == 0 && value == magic;
+	IOLog("S8 GPU: AS0 WRITE_VALUE %s irq=0x%x stop=0x%x js=0x%x exc=0x%x value=0x%x "
+	    "fault=0x%x mmu=0x%x at=0x%llx cfg=0x%x root=0x%llx as=%u\n",
+	    ok ? "passed" : "failed", irq, stop_irq, status, exception, value, fault, mmu_irq,
+	    (unsigned long long)fault_addr, transcfg, (unsigned long long)root, as_status);
+	s8gpu_wr(S8GPU_JOB_IRQ_CLEAR, done | fail);
+	s8gpu_wr(0x2004, 0xffffffffu);                  /* MMU_IRQ_CLEAR */
+	return ok;
+}
+
 static void
 s8gpu_init(void)
 {
@@ -193,7 +263,7 @@ s8gpu_init(void)
 	s8gpu_wr(0x180, s8gpu_shaders);
 	bool sh_on = s8gpu_wait(0x140, s8gpu_shaders, s8gpu_shaders, 100000);
 	s8gpu_blob = (volatile uint32_t *)ml_io_map(S8_BLIT_BASE_PA, S8_BLIT_SIZE);
-	s8gpu_pt = (volatile uint64_t *)ml_io_map(S8GPU_PT_PA, S8GPU_PT_PAGES * 4096);
+	s8gpu_pt = (volatile uint64_t *)ml_io_map(S8GPU_PT_PA, (S8GPU_PT_PAGES + 1) * 4096);
 	if (s8gpu_blob == NULL || s8gpu_pt == NULL) {
 		IOLog("S8 GPU: cannot map the blob/page tables at 0x%llx\n", S8_BLIT_BASE_PA);
 		return;
@@ -203,7 +273,8 @@ s8gpu_init(void)
 	}
 	s8gpu_pt_used = 1;                              /* page 0: level 0 */
 	bool mapped = s8gpu_map(S8_BLIT_BASE_PA, S8_BLIT_BASE_PA, S8_BLIT_SIZE) &&
-	    s8gpu_map(S8GPU_PANEL_PA, S8GPU_PANEL_PA, (S8GPU_PANEL_SIZE + 4095) & ~4095ULL);
+	    s8gpu_map(S8GPU_PANEL_PA, S8GPU_PANEL_PA, (S8GPU_PANEL_SIZE + 4095) & ~4095ULL) &&
+	    s8gpu_map(S8GPU_TEST_PA, S8GPU_TEST_PA, 4096);
 	__builtin_arm_dsb(0xf);
 	s8gpu_wr(S8GPU_AS0 + 0x00, (uint32_t)S8GPU_PT_PA);     /* AS_TRANSTAB */
 	s8gpu_wr(S8GPU_AS0 + 0x04, (uint32_t)(S8GPU_PT_PA >> 32));
@@ -219,10 +290,13 @@ s8gpu_init(void)
 		s8gpu_blob[i] = w;
 	}
 	__builtin_arm_dsb(0xf);
-	s8gpu_ready = reset && l2_on && tiler_on && sh_on && as_on;
-	IOLog("S8 GPU: Mali-G71 0x%x reset=%d l2=%d tiler=%d shaders=0x%x/%d as0=%d pt=%u -> %s\n",
-	    s8gpu_rd(0x000), reset, l2_on, tiler_on, s8gpu_shaders, sh_on, as_on, s8gpu_pt_used,
-	    s8gpu_ready ? "GPU present on" : "CPU present");
+	volatile uint32_t *test_page = (volatile uint32_t *)(s8gpu_pt + S8GPU_PT_PAGES * 512);
+	bool cores_on = reset && l2_on && tiler_on && sh_on && as_on;
+	bool test_ok = cores_on && s8gpu_write_value_test(test_page);
+	s8gpu_ready = cores_on && test_ok;
+	IOLog("S8 GPU: Mali-G71 0x%x reset=%d l2=%d tiler=%d shaders=0x%x/%d as0=%d test=%d pt=%u -> %s\n",
+	    s8gpu_rd(0x000), reset, l2_on, tiler_on, s8gpu_shaders, sh_on, as_on, test_ok,
+	    s8gpu_pt_used, s8gpu_ready ? "GPU present on" : "CPU present");
 }
 
 /* GPU address of a surface's bytes, mapping it into a slot if needed. */
