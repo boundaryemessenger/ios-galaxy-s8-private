@@ -4,6 +4,32 @@ Branch `s8-dreamlte` ports the A5XELTE work (iOS 16.7 on a Galaxy A5 2016 with
 4 KiB pages, Cortex-A53, GICv2, Samsung S-Boot) to the Galaxy S8, Exynos 8895.
 Observations on the phone and build results are kept apart from plans.
 
+## Bounded AS0 job diagnostic (2026-11-27)
+
+- Commit `e0f032c` adds a slot-1 `WRITE_VALUE` self-test after AS0 is
+  configured in the active AArch64 4K mode. It maps one dedicated page after
+  the page-table pool, starts a known Bifrost v6 job, waits up to 100 ms, then
+  issues a hard stop and waits up to another 100 ms on timeout. It logs IRQs,
+  JS status, target value, AS0 fault/config/root/status. GPU readiness now
+  depends on this minimal job; failure selects the existing CPU fallback
+  before Metal submits more jobs.
+- This test isolates basic XNU job-manager/MMU operation from Metal's
+  vertex/tiler descriptors. A prior 0135 probe completed a similar
+  `WRITE_VALUE` under legacy Mali LPAE mode; it does not prove the active
+  AArch64 path works.
+- Static checks passed: `git diff --check`, `apply-dreamlte.py` Python syntax,
+  source/patch parity (731 lines), and `git apply --stat`. No `g++`/Clang
+  compiler was found on `PATH`. XNU Actions run `46060326487` is building; no
+  device write or reboot is authorized.
+- Reproduced the previous DSB candidate offline using the saved CI kernel,
+  base ADT, parser-fix overlay, boot arguments, loader, and image template.
+  The payload (`8484671764ac31984b8cadc974c116fd21356372fd4da323bb540086af70dcfd`)
+  and boot image (`292326090bd87a0c6406d4c9564af00fc870fae70391c5ac54cdf65ea1347723`)
+  hashes matched exactly.
+- Next: fix any CI errors, then package the diagnostic kernel offline if it
+  builds. Ask for fresh explicit authorization before another BOOT write or
+  reboot. No GPU acceleration is confirmed.
+
 ## Mali AArch64 MMU correction (2026-11-27)
 
 - The previous SWEETLOG identified the active blocker as Mali job timeouts
