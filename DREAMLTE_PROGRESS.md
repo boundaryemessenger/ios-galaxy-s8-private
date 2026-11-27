@@ -29,10 +29,13 @@ Observations on the phone and build results are kept apart from plans.
 - The phone remains in TWRP; BOOT `/dev/block/sda7` remains at the previously
   verified hash
   `328a4b1207b5f850c242e854a5819656423f924b27ffbc8e137378eee98bd086`.
-  No partition write or reboot was performed. With user approval, the source
-  branch was pushed and XNU Actions run `46039636025` was dispatched against
-  commit `665f6fe`; its build result is still pending. Any later BOOT write
-  or reboot requires separate explicit authorization.
+  No partition write or reboot was performed. XNU Actions run `46039636025`
+  failed: patch 0136 declared 625 added lines but contains 635, truncating
+  `S8GPU.cpp` before its closing brace and `#endif`. The log reports those
+  resulting errors; no compile error from `SweetFramebuffer.cpp` was found.
+  Commit `b8729ec` corrects the hunk count to 635. Next, push this correction
+  and rerun the XNU workflow. Any later BOOT write or reboot requires
+  separate explicit authorization.
 
 ## Post-fix boot diagnostics (2026-11-27)
 
