@@ -43,7 +43,9 @@ Observations on the phone and build results are kept apart from plans.
   The separately authorized single reboot was issued and the user reports
   that it boots without GPU. The exact visible screen (lock/home versus an
   earlier boot stage) has not been specified. GPU/Metal acceleration remains
-  disabled and unverified.
+  disabled and unverified. A 20-minute post-reboot poll found neither ADB nor
+  fastboot enumeration; this does not establish the screen state. No second
+  reboot was attempted.
 
 - Commit `e0f032c` adds a slot-1 `WRITE_VALUE` self-test after AS0 is
   configured in the active AArch64 4K mode. It maps one dedicated page after
