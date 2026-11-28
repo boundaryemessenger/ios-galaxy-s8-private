@@ -1814,3 +1814,8 @@ built in CI or booted yet.
   and reversed cleanly against a buildtree from successful XNU Actions run
   `46060326487` with the prior e0f032c source. No BOOT write or reboot is
   authorized.
+- 2026-11-28 build: commit `cac6b51` passed XNU Actions run
+  `46145419093`. The kernel artifact is 17,207,152 bytes. The packaged BOOT
+  candidate is 17,137,680 bytes with SHA-256
+  `48b44cad7cce8cd8c91522db517725e608708ebb6b8243402d9641278e895321`.
+  It remains unflashed.
