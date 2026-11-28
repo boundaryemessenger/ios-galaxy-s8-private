@@ -1801,3 +1801,16 @@ built in CI or booted yet.
   built, flashed, or booted. Confidence remains 25%, below the 50% threshold
   for another attempt; no device action was taken. Source commit: `cfeae4f`;
   root handoff commit: `3f982b3`.
+- **S8 AS0 fragment-clear diagnostic (2026-11-28):** generated and
+  validated incremental patch
+  `xnu/patches/0137-dreamlte-as0-fragment-clear.patch`. It uses the shared
+  clear-only fragment descriptor from `s8_mali_clear.h`, reserves 256 KiB
+  of the high-bank GPU heap for the scratch surface, maps the test pages
+  and scratch surface through XNU AS0, runs the clear on slot 0, verifies
+  256 sampled pixels, and requires both the existing WRITE_VALUE test and
+  this fragment test to pass before enabling GPU presentation. Validation:
+  descriptor/MMU host test passed; updated loader probe cross-compiled for
+  AArch64; generator syntax and patch hunk count passed; the patch applied
+  and reversed cleanly against a buildtree from successful XNU Actions run
+  `46060326487` with the prior e0f032c source. No BOOT write or reboot is
+  authorized.

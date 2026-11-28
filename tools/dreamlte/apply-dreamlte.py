@@ -798,6 +798,7 @@ edit('iokit/Kernel/arm/SweetFramebuffer.cpp', [
      (Path(__file__).parent / 's8_mali_blit.h').read_text() + '\n' +
      (Path(__file__).parent / 's8mali_ioctl.h').read_text() + '\n' +
      (Path(__file__).parent / 's8_mali_mmu.h').read_text() + '\n' +
+     (Path(__file__).parent / 's8_mali_clear.h').read_text() + '\n' +
      (Path(__file__).parent / 's8_gpu_present.inc').read_text() +
      '/* Layouts the GPU present reads as BGRA8: BGRA, and \'b3a8\', the\n'
      ' * extended-range surface CoreAnimation renders the display into with\n'

@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstdint>
 
+#include "../s8_mali_clear.h"
 #include "../s8_mali_mmu.h"
 
 static bool
@@ -46,11 +47,41 @@ allocBoundsTest(void)
 	return true;
 }
 
+static bool
+fragmentClearDescriptorTest(void)
+{
+	uint32_t job[16] = {};
+	uint32_t fb[128] = {};
+	const uint64_t fbGpuVA = 0x8a0042000ULL;
+	const uint64_t dstGpuVA = 0x8b0000000ULL;
+	s8gpu_clear256_build(job, fb, fbGpuVA, dstGpuVA, S8GPU_CLEAR256_STRIDE);
+
+	assert(job[4] == (1u | (9u << 1) | (1u << 16)));
+	assert(job[8] == 0);
+	assert(job[9] == 0x000f000fu);
+	assert(job[10] == (uint32_t)((fbGpuVA + 0x100) | 1ULL));
+	assert(job[11] == (uint32_t)(((fbGpuVA + 0x100) | 1ULL) >> 32));
+	assert(fb[0] == (128u | (128u << 16)));
+	assert(fb[32] == fb[0]);
+	assert(fb[68] == (uint32_t)fbGpuVA);
+	assert(fb[69] == (uint32_t)(fbGpuVA >> 32));
+	assert(fb[72] == 0x00ff00ffu);
+	assert(fb[74] == 0x00ff00ffu);
+	assert(fb[75] == ((8u << 9) | (1u << 24)));
+	assert(fb[96] == (1u << 26));
+	assert(fb[104] == (uint32_t)dstGpuVA);
+	assert(fb[105] == (uint32_t)(dstGpuVA >> 32));
+	assert(fb[106] == S8GPU_CLEAR256_STRIDE);
+	assert(fb[108] == S8GPU_CLEAR256_COLOR);
+	return true;
+}
+
 int
 main(void)
 {
 	assert(descriptorTest());
 	assert(mmuConfigTest());
 	assert(allocBoundsTest());
+	assert(fragmentClearDescriptorTest());
 	return 0;
 }

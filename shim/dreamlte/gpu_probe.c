@@ -24,6 +24,7 @@
  */
 #include <stdint.h>
 #include "gpu_probe.h"
+#include "../../tools/dreamlte/s8_mali_clear.h"
 
 #define PMU		0x16480000UL
 #define G3D_CFG		(PMU + 0x40e0)
@@ -62,15 +63,9 @@ static volatile uint8_t gpu_mem[1024] __attribute__((aligned(256)));
 #define FB_STRIDE	5760u
 #define SQ_X		592u
 #define SQ_Y		2496u
-#define SQ		256u
+#define SQ		S8GPU_CLEAR256_SIZE
 #define SQ_BASE		(FB_PHYS + SQ_Y * FB_STRIDE + SQ_X * 4)
-#define GREY		0xffc0c0c0u
 static volatile uint8_t gpu_fb[1024] __attribute__((aligned(256)));
-
-static void fput32(unsigned off, uint32_t v)
-{
-	*(volatile uint32_t *)(gpu_fb + off) = v;
-}
 
 static inline uint32_t rd(uintptr_t a) { return *(volatile uint32_t *)a; }
 static inline void wr(uintptr_t a, uint32_t v) { *(volatile uint32_t *)a = v; }
@@ -130,37 +125,13 @@ static void job_header(unsigned type);
 static int gpu_draw(void (*kv)(const char *, uint64_t), void (*out)(const char *), uint32_t shaders)
 {
 	out("GPU draw (fragment job, clear 256x256)\n");
-	for (unsigned i = 0; i < sizeof(gpu_fb); i += 4)
-		fput32(i, 0);
-	/* Sample positions (0x000): single-sampled position and origin. */
-	fput32(0x00, 128u | 128u << 16);
-	fput32(0x80, 128u | 128u << 16);		/* positions[32] = origin */
-	/* Framebuffer descriptor (0x100): parameters, padding, RT at +128. */
-	unsigned fbd = 0x100, rt = fbd + 128;
-	uint64_t sp = (uintptr_t)gpu_fb;
-	fput32(fbd + 4 * 4, (uint32_t)sp);		/* sample locations */
-	fput32(fbd + 5 * 4, (uint32_t)(sp >> 32));
-	fput32(fbd + 8 * 4, (SQ - 1) | (SQ - 1) << 16);	/* width, height */
-	fput32(fbd + 10 * 4, (SQ - 1) | (SQ - 1) << 16);	/* bound max */
-	/* sample count log2 0, pattern 0, tile 2^8 px, 1 RT, cbuf 1 KiB */
-	fput32(fbd + 11 * 4, (8u << 9) | (0u << 19) | (1u << 24));
-	fput32(rt + 0 * 4, 1u << 26);			/* internal R8G8B8A8 */
-	fput32(rt + 1 * 4, 1u | (19u << 3) | (2u << 10) | (0x688u << 16) | (1u << 31));
-	fput32(rt + 8 * 4, (uint32_t)SQ_BASE);		/* writeback base */
-	fput32(rt + 9 * 4, (uint32_t)((uint64_t)SQ_BASE >> 32));
-	fput32(rt + 10 * 4, FB_STRIDE);			/* row stride */
-	for (unsigned c = 0; c < 4; c++)
-		fput32(rt + (12 + c) * 4, GREY);	/* clear colour */
+	s8gpu_clear256_build((volatile uint32_t *)gpu_mem, (volatile uint32_t *)gpu_fb,
+	    (uintptr_t)gpu_fb, SQ_BASE, FB_STRIDE);
 	/* Black square first, so a GPU write is visible and checkable. */
 	for (unsigned y = 0; y < SQ; y++)
 		for (unsigned x = 0; x < SQ; x++)
 			wr(SQ_BASE + y * FB_STRIDE + x * 4, 0xff000000u);
 
-	job_header(9);					/* FRAGMENT */
-	put32(0x20, 0);					/* bound min tile 0,0 */
-	put32(0x24, (SQ / 16 - 1) | (SQ / 16 - 1) << 16);	/* bound max tile */
-	uint64_t ptr = ((uintptr_t)gpu_fb + fbd) | 1u;	/* MFBD, 1 RT */
-	put64(0x28, ptr);
 	uint32_t irq = run_job(shaders);
 	kv("FRAG job irq", irq);
 	kv("js0 status", rd(MALI + JS0 + 0x24));

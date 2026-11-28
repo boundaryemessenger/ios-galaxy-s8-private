@@ -32,7 +32,9 @@ extern "C" void flush_dcache(vm_offset_t addr, unsigned count, int phys);
 #define S8GPU_AS0               0x2400
 #define S8GPU_PT_PA             (S8_BLIT_BASE_PA + 0x10000)     /* page-table pool */
 #define S8GPU_PT_PAGES          1024                            /* 4 MiB pool */
-#define S8GPU_TEST_PA           (S8GPU_PT_PA + (uint64_t)S8GPU_PT_PAGES * 4096) /* isolated test page */
+#define S8GPU_TEST_PAGES        2
+#define S8GPU_TEST_SIZE         ((uint64_t)S8GPU_TEST_PAGES * 4096)
+#define S8GPU_TEST_PA           (S8GPU_PT_PA + (uint64_t)S8GPU_PT_PAGES * 4096)
 #define S8GPU_SLOTS             16
 #define S8GPU_SLOT_VA           0x100000000ULL
 #define S8GPU_SLOT_SIZE         0x2000000ULL                    /* 32 MiB */
@@ -43,6 +45,8 @@ extern "C" void flush_dcache(vm_offset_t addr, unsigned count, int phys);
 #define S8GPU_HEAP_PA           0x8b0000000ULL
 #define S8GPU_HEAP_SIZE         0x20000000ULL                   /* 512 MiB */
 #define S8GPU_HEAP_UNIT         0x10000ULL                      /* 64 KiB */
+#define S8GPU_HEAP_PROBE_SIZE   ((uint64_t)S8GPU_CLEAR256_SIZE * S8GPU_CLEAR256_STRIDE)
+#define S8GPU_HEAP_PROBE_UNITS  (S8GPU_HEAP_PROBE_SIZE / S8GPU_HEAP_UNIT)
 #define S8GPU_HEAP_UNITS        (S8GPU_HEAP_SIZE / S8GPU_HEAP_UNIT)
 #define S8GPU_ALLOCS            256
 
@@ -221,6 +225,74 @@ s8gpu_write_value_test(volatile uint32_t *page)
 	return ok;
 }
 
+static bool
+s8gpu_fragment_clear_test(volatile uint32_t *job, volatile uint32_t *fb,
+    volatile uint32_t *surface)
+{
+	const uint32_t done = 1u, fail = 1u << 16;
+	uint64_t bytes = S8GPU_HEAP_PROBE_SIZE;
+	for (uint64_t i = 0; i < bytes / sizeof(*surface); i++) {
+		surface[i] = 0xff000000u;
+	}
+	s8gpu_clear256_build(job, fb, S8GPU_TEST_PA + 4096, S8GPU_HEAP_PA,
+	    S8GPU_CLEAR256_STRIDE);
+	clean_dcache((vm_offset_t)job, S8GPU_TEST_SIZE, 0);
+	clean_dcache((vm_offset_t)surface, (unsigned)bytes, 0);
+	__builtin_arm_dsb(0xf);
+
+	s8gpu_wr(S8GPU_JOB_IRQ_CLEAR, done | fail);
+	s8gpu_wr(0x2004, 0xffffffffu);
+	s8gpu_wr(S8GPU_JS0 + 0x40, (uint32_t)S8GPU_TEST_PA);
+	s8gpu_wr(S8GPU_JS0 + 0x44, (uint32_t)(S8GPU_TEST_PA >> 32));
+	s8gpu_wr(S8GPU_JS0 + 0x50, s8gpu_shaders);
+	s8gpu_wr(S8GPU_JS0 + 0x54, 0);
+	s8gpu_wr(S8GPU_JS0 + 0x58, (8u << 16) | (3u << 12) | (3u << 8));
+	__builtin_arm_dsb(0xf);
+	s8gpu_wr(S8GPU_JS0 + 0x60, 1);
+	uint32_t irq = 0;
+	for (unsigned i = 0; i < 10000; i++) {
+		irq = s8gpu_rd(S8GPU_JOB_IRQ_RAWSTAT);
+		if (irq & (done | fail)) {
+			break;
+		}
+		IODelay(10);
+	}
+	uint32_t stop_irq = irq;
+	if (!(irq & (done | fail))) {
+		s8gpu_wr(S8GPU_JS0 + 0x60, 3);
+		for (unsigned i = 0; i < 100000; i++) {
+			stop_irq = s8gpu_rd(S8GPU_JOB_IRQ_RAWSTAT);
+			if (stop_irq & (done | fail)) {
+				break;
+			}
+			IODelay(1);
+		}
+	}
+	flush_dcache((vm_offset_t)job, S8GPU_TEST_SIZE, 0);
+	flush_dcache((vm_offset_t)surface, (unsigned)bytes, 0);
+	uint32_t status = s8gpu_rd(S8GPU_JS0 + 0x24);
+	uint32_t exception = job[0];
+	uint32_t fault = s8gpu_rd(S8GPU_AS0 + 0x1c);
+	uint32_t mmu_irq = s8gpu_rd(0x2000);
+	unsigned grey = 0;
+	for (unsigned y = 0; y < S8GPU_CLEAR256_SIZE; y += 16) {
+		for (unsigned x = 0; x < S8GPU_CLEAR256_SIZE; x += 16) {
+			uint32_t pixel = surface[(uint64_t)y * S8GPU_CLEAR256_STRIDE / 4 + x];
+			grey += (pixel & 0xffffffu) == (S8GPU_CLEAR256_COLOR & 0xffffffu);
+		}
+	}
+	uint32_t final_irq = irq | stop_irq;
+	bool ok = (final_irq & done) != 0 && (final_irq & fail) == 0 && grey == 256;
+	IOLog("S8 GPU: AS0 FRAGMENT_CLEAR %s irq=0x%x stop=0x%x js=0x%x exc=0x%x "
+	    "fault=0x%x mmu=0x%x pixels=%u/256 first=0x%x last=0x%x\n",
+	    ok ? "passed" : "failed", irq, stop_irq, status, exception, fault, mmu_irq, grey,
+	    surface[0], surface[(uint64_t)(S8GPU_CLEAR256_SIZE - 1) *
+	    S8GPU_CLEAR256_STRIDE / 4 + S8GPU_CLEAR256_SIZE - 1]);
+	s8gpu_wr(S8GPU_JOB_IRQ_CLEAR, done | fail);
+	s8gpu_wr(0x2004, 0xffffffffu);
+	return ok;
+}
+
 static void
 s8gpu_init(void)
 {
@@ -263,10 +335,21 @@ s8gpu_init(void)
 	s8gpu_wr(0x180, s8gpu_shaders);
 	bool sh_on = s8gpu_wait(0x140, s8gpu_shaders, s8gpu_shaders, 100000);
 	s8gpu_blob = (volatile uint32_t *)ml_io_map(S8_BLIT_BASE_PA, S8_BLIT_SIZE);
-	s8gpu_pt = (volatile uint64_t *)ml_io_map(S8GPU_PT_PA, (S8GPU_PT_PAGES + 1) * 4096);
+	s8gpu_pt = (volatile uint64_t *)ml_io_map(S8GPU_PT_PA,
+	    (S8GPU_PT_PAGES * 4096) + S8GPU_TEST_SIZE);
 	if (s8gpu_blob == NULL || s8gpu_pt == NULL) {
 		IOLog("S8 GPU: cannot map the blob/page tables at 0x%llx\n", S8_BLIT_BASE_PA);
 		return;
+	}
+	volatile uint32_t *probe_surface = (volatile uint32_t *)ml_io_map(S8GPU_HEAP_PA,
+	    (vm_size_t)S8GPU_HEAP_PROBE_SIZE);
+	if (probe_surface == NULL) {
+		IOLog("S8 GPU: cannot map the fragment self-test surface at 0x%llx\n",
+		    S8GPU_HEAP_PA);
+		return;
+	}
+	for (unsigned i = 0; i < S8GPU_HEAP_PROBE_UNITS; i++) {
+		s8gpu_heap_used[i] = 1;
 	}
 	for (unsigned i = 0; i < S8GPU_PT_PAGES * 512; i++) {
 		s8gpu_pt[i] = 0;
@@ -274,7 +357,8 @@ s8gpu_init(void)
 	s8gpu_pt_used = 1;                              /* page 0: level 0 */
 	bool mapped = s8gpu_map(S8_BLIT_BASE_PA, S8_BLIT_BASE_PA, S8_BLIT_SIZE) &&
 	    s8gpu_map(S8GPU_PANEL_PA, S8GPU_PANEL_PA, (S8GPU_PANEL_SIZE + 4095) & ~4095ULL) &&
-	    s8gpu_map(S8GPU_TEST_PA, S8GPU_TEST_PA, 4096);
+	    s8gpu_map(S8GPU_TEST_PA, S8GPU_TEST_PA, S8GPU_TEST_SIZE) &&
+	    s8gpu_map(S8GPU_HEAP_PA, S8GPU_HEAP_PA, S8GPU_HEAP_PROBE_SIZE);
 	__builtin_arm_dsb(0xf);
 	s8gpu_wr(S8GPU_AS0 + 0x00, (uint32_t)S8GPU_PT_PA);     /* AS_TRANSTAB */
 	s8gpu_wr(S8GPU_AS0 + 0x04, (uint32_t)(S8GPU_PT_PA >> 32));
@@ -293,9 +377,12 @@ s8gpu_init(void)
 	volatile uint32_t *test_page = (volatile uint32_t *)(s8gpu_pt + S8GPU_PT_PAGES * 512);
 	bool cores_on = reset && l2_on && tiler_on && sh_on && as_on;
 	bool test_ok = cores_on && s8gpu_write_value_test(test_page);
-	s8gpu_ready = cores_on && test_ok;
-	IOLog("S8 GPU: Mali-G71 0x%x reset=%d l2=%d tiler=%d shaders=0x%x/%d as0=%d test=%d pt=%u -> %s\n",
-	    s8gpu_rd(0x000), reset, l2_on, tiler_on, s8gpu_shaders, sh_on, as_on, test_ok,
+	bool fragment_ok = test_ok && s8gpu_fragment_clear_test(test_page,
+	    test_page + 4096 / sizeof(*test_page), probe_surface);
+	s8gpu_ready = cores_on && test_ok && fragment_ok;
+	IOLog("S8 GPU: Mali-G71 0x%x reset=%d l2=%d tiler=%d shaders=0x%x/%d as0=%d "
+	    "write=%d fragment=%d pt=%u -> %s\n",
+	    s8gpu_rd(0x000), reset, l2_on, tiler_on, s8gpu_shaders, sh_on, as_on, test_ok, fragment_ok,
 	    s8gpu_pt_used, s8gpu_ready ? "GPU present on" : "CPU present");
 }
 
