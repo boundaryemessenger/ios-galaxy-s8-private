@@ -3,9 +3,9 @@ index 48328a8..d68e3d8 100644
 --- a/iokit/Kernel/arm/SweetFramebuffer.cpp
 +++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
 @@ -1178,6 +1178,56 @@ s8gpu_mmu_page_descriptor(uint64_t pa)
-
+ 
  #endif
-
+ 
 +#ifndef S8_MALI_CLEAR_H
 +#define S8_MALI_CLEAR_H
 +
@@ -78,11 +78,11 @@ index 48328a8..d68e3d8 100644
 +#define S8GPU_HEAP_PROBE_UNITS  (S8GPU_HEAP_PROBE_SIZE / S8GPU_HEAP_UNIT)
  #define S8GPU_HEAP_UNITS        (S8GPU_HEAP_SIZE / S8GPU_HEAP_UNIT)
  #define S8GPU_ALLOCS            256
-
+ 
 @@ -1401,6 +1455,74 @@ s8gpu_write_value_test(volatile uint32_t *page)
  	return ok;
  }
-
+ 
 +static bool
 +s8gpu_fragment_clear_test(volatile uint32_t *job, volatile uint32_t *fb,
 +    volatile uint32_t *surface)
@@ -202,3 +202,4 @@ index 48328a8..d68e3d8 100644
 +	    s8gpu_rd(0x000), reset, l2_on, tiler_on, s8gpu_shaders, sh_on, as_on, test_ok, fragment_ok,
  	    s8gpu_pt_used, s8gpu_ready ? "GPU present on" : "CPU present");
  }
+ 

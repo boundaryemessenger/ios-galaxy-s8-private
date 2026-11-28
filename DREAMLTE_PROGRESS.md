@@ -1818,4 +1818,22 @@ built in CI or booted yet.
   `46145419093`. The kernel artifact is 17,207,152 bytes. The packaged BOOT
   candidate is 17,137,680 bytes with SHA-256
   `48b44cad7cce8cd8c91522db517725e608708ebb6b8243402d9641278e895321`.
-  It remains unflashed.
+  The candidate was written to BOOT after authorization and the phone
+  rebooted once. Full BOOT readback matched the candidate-plus-preserved-tail
+  at SHA-256
+  `b012612db0dc1383134cffbec69f33b42ccf6ddc97cffaeac29653c12f674066`.
+- The user reported a black screen. Read-only TWRP capture at
+  `F:\ios-sweet-temp\s8-as0-fragment-20261128\postboot-logs\` decoded to
+  91,101 bytes (flush #6). It shows launchd, SpringBoard and backboardd, plus
+  failed Mali vertex/tiler and present jobs (`JS 0x8`, no job IRQ, no AS
+  fault); no working GPU frame is confirmed. Crucially, the log prints the
+  old `test=1` GPU initialization line and has no `AS0 FRAGMENT_CLEAR` line.
+  Inspection of the actual XNU Actions log explains why: patch 0137 was
+  silently skipped as `corrupt patch at line 205`. Thus run `46145419093`
+  and its candidate did not contain the new fragment diagnostic; no
+  conclusion about that diagnostic's device behavior can be drawn.
+- Regenerated 0137 against the exact successful-run source and verified it
+  applies cleanly. The XNU workflow now asserts that the fragment diagnostic
+  string exists in the patched source, so a skipped patch fails the run.
+  The phone is back in TWRP. The one authorized write/reboot test has been
+  used; a new write or reboot requires fresh explicit authorization.

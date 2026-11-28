@@ -83,6 +83,9 @@ jobs:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
         run: bash build.sh
 
+      - name: Verify S8 fragment-clear diagnostic was applied
+        run: grep -n "AS0 FRAGMENT_CLEAR" dxb/xnu/iokit/Kernel/arm/SweetFramebuffer.cpp
+
       - name: Package build tree for local compiles
         if: always()
         run: |
